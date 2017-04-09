@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>webgl reflections</title>
+
+<style>
+	body {
+		margin: 0px;
+		overflow: hidden;
+	}
+
+	#info {
+		position: absolute;
+		top: 0px; width: 100%;
+		padding: 20px;
+		color: white;
+		text-align: center;
+	}
+	
+	#info a:link {
+				color: white;
+	}
+		
+	#info a:visited {
+		color: white;
+	}
+</style>
+
+<script type="text/javascript" src="lib/dat.gui.min.js"></script>
+<script type="text/javascript" src="lib/stats.min.js"></script>
+<script type="text/javascript" src="lib/gl-matrix-min.js"></script>
+<script type="text/javascript" src="utils/webgl_utils.js"></script>
+<script type="text/javascript" src="data/sphere.js"></script>
+<script type="text/javascript" src="data/levelCubeData.js"></script>
+<script type="text/javascript" src="data/wt_teapot-trimmed.obj.json"></script>
+
+
+
+
+<!-- simple pix shader -->
+<script id="shader-simple-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	uniform vec4 uColor;
+	
+	void main(void) {
+		gl_FragColor = uColor;
+	}
+</script>
+<!-- vertex shader -->
+<script id="shader-simple-vs" type="x-shader/x-vertex">
+	attribute vec3 aVertexPosition;
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+				
+	void main(void) {
+		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+	}
+</script>
+
+
+
+
+
+<script type="text/javascript" src="js/main.js"></script>
+
+</head>
+
+<body onload="init()">
+<div id="info">WebGL reflections demo<a href="https://github.com/filbs111/webgl-reflections" target="_blank">https://github.com/filbs111/webgl-reflections</a></div>
+		
+<canvas id="mycanvas" width="0" height="0">CANVAS TO GO HERE</canvas>
+
+</body>
+
+
+</html>
