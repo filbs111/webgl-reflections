@@ -19,10 +19,18 @@ TODO
 7) allow the player to fly into one sphere and out of the other.
 
 
-detailed todo
-initialise buffers	DONE
-init shaders (simplest plain white shader)
-create camera
-draw world
+done:
+draw object that will reflect 
 
-
+todo:
+draw an environment around object
+allow camera to move (controls)
+draw cubemap from object centre
+shader that projects cubemap onto surface of "reflecting" object (vert shader?)
+shader that uses object normals to instead of position for same (ie independent of cam position)
+shader that does attempt to do actual reflection (dependent on cam position) - 2 variations - using vert normal, and "perfect sphere" normal.
+option to displace cubemap rendering point (dependent on camera position)
+----
+??? option to render something approaching what will finally do - not true reflection vector (similar to parabolic reflector)
+vertex rendering (not sure what equations here to get things working ideally - can likely work out reflection "direction" ok,
+but how to scale homogenous co-ord such that works well....)

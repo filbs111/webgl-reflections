@@ -1,8 +1,8 @@
-var shaderProgramWhite;
+var shaderProgramColored;
 function initShaders(){
-	shaderProgramWhite = loadShader( "shader-simple-vs", "shader-simple-fs",{
+	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
 		attributes:["aVertexPosition"],
-		uniforms:["uPMatrix","uMVMatrix"]
+		uniforms:["uPMatrix","uMVMatrix","uColor"]
 	});
 	console.log("loaded 1st shader");
 }
@@ -86,13 +86,14 @@ function drawScene(frameTime){
 
 function drawWorldScene(frameTime) {		
 		//console.log("drawing...");
-		var activeProg = shaderProgramWhite;
+		var activeProg = shaderProgramColored;
 	
 		mat4.set(playerMatrix, playerCamera);	//necessary to have playerCam and playerMatrix???
 		mat4.set(playerCamera, mvMatrix)
 
 		//draw level cube
 		gl.useProgram(activeProg);
+		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 0.4, 0.4, 1.0]);	//RED
 		
 		switch (guiParams.shape){
 			case "sphere":
