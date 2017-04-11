@@ -167,7 +167,7 @@ function setMatrixUniforms(shaderProgram) {
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	mat4.identity(playerMatrix);
-	mat4.translate(playerMatrix, [0,0,-4]);
+	movePlayerFwd(-4);
 }
 
 
@@ -206,6 +206,54 @@ function init(){
 		//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 		
 	
+	window.addEventListener("keydown",function(evt){
+		console.log("key pressed : " + evt.keyCode);
+		var willPreventDefault=true;
+		switch (evt.keyCode){
+			case 87:				//W
+				movePlayerFwd(0.1);
+				break;
+			case 83:				//S
+				movePlayerFwd(-0.1);
+				break;
+			case 65:				//A
+				movePlayerLeft(0.1);
+				break;
+			case 68:				//D
+				movePlayerLeft(-0.1);
+				break;
+			case 39:
+				turnPlayer(0.02);
+				break;
+			case 37:
+				turnPlayer(-0.02);
+				break;
+			case 81:				//Q
+				rollPlayer(-0.02);	
+				break;
+			case 69:				//E
+				rollPlayer(0.02);	
+				break;
+			case 32:				//spacebar
+				movePlayerUp(-0.1);
+				break;
+			case 17:				//ctrl
+				movePlayerUp(0.1);
+				break;
+			default:
+				willPreventDefault=false;
+				break;
+			case 38:
+				pitchPlayer(-0.02);		//up arrow
+				break;
+			case 40:
+				pitchPlayer(0.02);
+				break;
+		}
+		if (willPreventDefault){evt.preventDefault()};
+	});
+	
+	
 	canvas = document.getElementById("mycanvas");
 
 	initGL();
@@ -220,4 +268,76 @@ function init(){
 	setupScene();
 		
 	requestAnimationFrame(drawScene);
+}
+
+
+
+
+var playerPosition = [0,0,0];
+function movePlayerFwd(amount){	
+	playerPosition[0] += amount*playerMatrix[2];
+	playerPosition[1] += amount*playerMatrix[6];
+	playerPosition[2] += amount*playerMatrix[10];
+	setPlayerTranslation(playerPosition);
+}
+function movePlayerUp(amount){	
+	playerPosition[0] += amount*playerMatrix[1];
+	playerPosition[1] += amount*playerMatrix[5];
+	playerPosition[2] += amount*playerMatrix[9];
+	setPlayerTranslation(playerPosition);
+}
+function movePlayerLeft(amount){	
+	playerPosition[0] += amount*playerMatrix[0];
+	playerPosition[1] += amount*playerMatrix[4];
+	playerPosition[2] += amount*playerMatrix[8];
+	setPlayerTranslation(playerPosition);
+}
+function movePlayer(vec){	//[left,up,forward]
+	playerPosition[0] += vec[0]*playerMatrix[0] + vec[1]*playerMatrix[1] + vec[2]*playerMatrix[2];
+	playerPosition[1] += vec[0]*playerMatrix[4] + vec[1]*playerMatrix[5] + vec[2]*playerMatrix[6];
+	playerPosition[2] += vec[0]*playerMatrix[8] + vec[1]*playerMatrix[9] + vec[2]*playerMatrix[10];
+	setPlayerTranslation(playerPosition);
+	constrainPlayerPositionToBox();
+}
+function turnPlayer(amount){
+	setPlayerTranslation([0,0,0]);
+
+	var rotMat=mat4.identity();
+	mat4.rotateY(rotMat, amount);
+	mat4.multiply(rotMat, playerMatrix, playerMatrix);
+	
+	setPlayerTranslation(playerPosition);
+}
+function rollPlayer(amount){
+	setPlayerTranslation([0,0,0]);	
+	
+	var rotMat=mat4.identity();
+	mat4.rotateZ(rotMat, amount);
+	mat4.multiply(rotMat, playerMatrix, playerMatrix);
+
+	setPlayerTranslation(playerPosition);
+}
+function pitchPlayer(amount){
+	setPlayerTranslation([0,0,0]);	
+	
+	var rotMat=mat4.identity();
+	mat4.rotateX(rotMat, amount);
+	mat4.multiply(rotMat, playerMatrix, playerMatrix);
+
+	setPlayerTranslation(playerPosition);
+}
+function rotatePlayer(vec){
+	setPlayerTranslation([0,0,0]);
+	var rotationMag = Math.sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]);
+	var rotMat=mat4.identity();
+	mat4.rotate(rotMat, rotationMag, [vec[0]/rotationMag, vec[1]/rotationMag, vec[2]/rotationMag]);	//TODO find or make method taking vector instead of separate unit axis/angle
+	mat4.multiply(rotMat, playerMatrix, playerMatrix);
+	setPlayerTranslation(playerPosition);
+}
+
+function setPlayerTranslation(posArray){
+	playerMatrix[12]=0;	//zero translation components
+	playerMatrix[13]=0;
+	playerMatrix[14]=0;
+	mat4.translate(playerMatrix, posArray);
 }
