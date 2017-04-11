@@ -22,11 +22,11 @@ TODO
 done:
 draw object that will reflect 
 draw an environment around object
-
-todo:
 allow camera to move (controls)
 draw cubemap from object centre
 shader that projects cubemap onto surface of "reflecting" object (vert shader?)
+
+todo:
 shader that uses object normals to instead of position for same (ie independent of cam position)
 shader that does attempt to do actual reflection (dependent on cam position) - 2 variations - using vert normal, and "perfect sphere" normal.
 option to displace cubemap rendering point (dependent on camera position)

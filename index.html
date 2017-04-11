@@ -88,6 +88,32 @@
 
 
 
+<!-- cube mapping simple projection-->
+<script id="shader-cubemap-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	
+	varying vec3 vPos;
+	uniform samplerCube uSampler;
+	
+	void main(void) {
+		gl_FragColor = textureCube(uSampler, vPos);
+	}
+</script>
+<!-- vertex shader -->
+<script id="shader-cubemap-vs" type="x-shader/x-vertex">
+	attribute vec3 aVertexPosition;
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+	varying vec3 vPos;
+
+	void main(void) {
+		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+		//vPos = aVertexPosition;
+		vPos = vec3(aVertexPosition.x, -aVertexPosition.y, -aVertexPosition.z );
+	}
+</script>
+
+
 
 <script type="text/javascript" src="js/main.js"></script>
 

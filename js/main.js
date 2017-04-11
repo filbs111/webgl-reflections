@@ -1,5 +1,6 @@
 var shaderProgramColored;
 var shaderProgramPosColor;
+var shaderProgramCubemapProj;
 function initShaders(){
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
 		attributes:["aVertexPosition"],
@@ -9,6 +10,10 @@ function initShaders(){
 	shaderProgramPosColor = loadShader( "shader-poscolor-vs", "shader-poscolor-fs",{
 		attributes:["aVertexPosition"],
 		uniforms:["uPMatrix","uMVMatrix","uColor"]
+	});
+	shaderProgramCubemapProj = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
+		attributes:["aVertexPosition"],
+		uniforms:["uPMatrix","uMVMatrix"]
 	});
 }
 
@@ -70,44 +75,83 @@ function drawScene(frameTime){
 	stats.end();
 	stats.begin();
 	
-	//TODO move pMatrix etc to only recalc on screen resize
+	
+	//render cubemap views
+	var rotsY=[
+				0.5*Math.PI,-0.5*Math.PI,0,0,0,Math.PI
+			];
+	var rotsX=[
+				0,0,0.5*Math.PI,-0.5*Math.PI,0,0
+			];
+	gl.clearColor(1.0, 0.1, 0.1, 1.0);
+	for (var ii=0;ii<6;ii++){
+	//for (var ii=0;ii<1;ii++){
+		mat4.perspective( 90.0, 1.0, 0.1, 100, pMatrix);	
+		var framebuffer = cubemapFramebuffer[ii];
+		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+		gl.viewport(0, 0, framebuffer.width, framebuffer.height);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		
+		//mat4.set(playerMatrix, playerCamera);
+		mat4.identity(playerCamera);
+		mat4.rotateY(playerCamera, rotsY[ii]);
+		mat4.rotateX(playerCamera, rotsX[ii]);
+		
+		//mat4.multiply(playerCamera, playerMatrix, playerCamera);
+		drawWorldScene(frameTime, false);
+	}
+	
+	
 	mat4.perspective(60, gl.viewportWidth/ gl.viewportHeight, 0.1, 10, pMatrix);
 	
+	//setup for drawing to screen
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	
-	drawWorldScene(frameTime, 0);
+	mat4.set(playerMatrix, playerCamera);	//necessary to have playerCam and playerMatrix???
+	gl.clearColor(0.0, 0.1, 0.1, 1.0);
+
+	drawWorldScene(frameTime, true);
 }
 
 
-function drawWorldScene(frameTime) {		
+function drawWorldScene(frameTime, drawReflector) {		
 		//console.log("drawing...");
-		var activeProg = shaderProgramPosColor;
-	
-		mat4.set(playerMatrix, playerCamera);	//necessary to have playerCam and playerMatrix???
 		mat4.set(playerCamera, mvMatrix)
-		
-		//draw level cube
-		gl.useProgram(activeProg);
-		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 0.4, 0.4, 1.0]);	//RED
-		
-		switch (guiParams.shape){
-			case "sphere":
-				drawObjectFromBuffers(sphereBuffers, activeProg);
-			break;
-			case "teapot":
-				drawObjectFromBuffers(teapotBuffers, activeProg);
-			break;
-			case "octoframe":
-				drawObjectFromBuffers(octoFrameBuffers, activeProg);
-			break;
-		}
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-		//drawObjectFromBuffers(cubeBuffers, activeProg);
+		//use cubemap for centre object
+		if (drawReflector){
+			
+			var activeProg = shaderProgramCubemapProj;
+			gl.useProgram(activeProg);
+					
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+			gl.uniform1i(activeProg.uniforms.uSampler, 0);
+					
+			switch (guiParams.shape){
+				case "sphere":
+					drawObjectFromBuffers(sphereBuffers, activeProg);
+				break;
+				case "teapot":
+					drawObjectFromBuffers(teapotBuffers, activeProg);
+				break;
+				case "octoframe":
+					drawObjectFromBuffers(octoFrameBuffers, activeProg);
+				break;
+			}
+		}
 		
 		//draw other objects in scene
-		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 0.4, 1.0]);	//WHITE
+
+		activeProg = shaderProgramPosColor;
+		gl.useProgram(activeProg);
+		
+		//TODO disable texture??
+		
+		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 1.0, 1.0]);	//WHITE
 
 		mat4.translate(mvMatrix, [2, 0, 0]);
 		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//right
@@ -116,11 +160,11 @@ function drawWorldScene(frameTime) {
 		mat4.translate(mvMatrix, [2, 2, 0]);
 		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//top
 		mat4.translate(mvMatrix, [0, -4, 0]);
-		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//bottom
+		drawObjectFromBuffers(sphereBuffers, activeProg);	//bottom
 		mat4.translate(mvMatrix, [0, 2, 2]);
 		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//front
 		mat4.translate(mvMatrix, [0, 0, -4]);
-		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//back
+		drawObjectFromBuffers(teapotBuffers, activeProg);	//back
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
@@ -162,6 +206,54 @@ var playerCamera = mat4.create();
 function setMatrixUniforms(shaderProgram) {
     gl.uniformMatrix4fv(shaderProgram.uniforms.uPMatrix, false, pMatrix);
     gl.uniformMatrix4fv(shaderProgram.uniforms.uMVMatrix, false, mvMatrix);
+}
+
+var cubemapFramebuffer;
+var cubemapTexture;
+var cubemapSize = 1024;
+//cube map code from http://www.humus.name/cubemapviewer.js (slightly modified)
+function initCubemapFramebuffer()
+{
+	cubemapFramebuffer = [];
+
+	cubemapTexture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+	var faces = [gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+				 gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+				 gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+				 gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+				 gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+				 gl.TEXTURE_CUBE_MAP_NEGATIVE_Z];
+	for (var i = 0; i < faces.length; i++)
+	{
+		var face = faces[i];
+		
+		var framebuffer = gl.createFramebuffer();
+		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+		framebuffer.width = cubemapSize;
+		framebuffer.height = cubemapSize;
+		cubemapFramebuffer[i]=framebuffer;
+		
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);	//already bound so can lose probably
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+		//gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+		gl.texImage2D(face, 0, gl.RGBA, cubemapSize, cubemapSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		
+		var renderbuffer = gl.createRenderbuffer();
+		gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+		gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, cubemapSize, cubemapSize);
+		
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, face, cubemapTexture, 0);
+		gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+	}
+	gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);	//this gets rid of errors being logged to console. 
+	gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
 function setupScene() {
@@ -259,6 +351,7 @@ function init(){
 	initGL();
 	initShaders();
 	initTexture();
+	initCubemapFramebuffer();
 	initBuffers();
   
 	gl.clearColor(0.0, 0.1, 0.1, 1.0);
