@@ -62,20 +62,8 @@ function drawScene(frameTime){
 	stats.begin();
 	
 	//TODO move pMatrix etc to only recalc on screen resize
-	//make a pmatrix for hemiphere perspective projection method.
-	mat4.identity(pMatrix);	//quickest way i know to set most terms to zero...
+	mat4.perspective(60, gl.viewportWidth/ gl.viewportHeight, 0.1, 10, pMatrix);
 	
-	var vFov = 90.0;
-	var fy = Math.tan((Math.PI/180.0)*vFov/2);
-	
-	pMatrix[0] = (gl.viewportHeight/gl.viewportWidth)/fy ;
-	pMatrix[5] = 1.0/fy;
-	pMatrix[11]	= -1;	//rotate w into z.
-	pMatrix[14] = -0.01;	//smaller = more z range. 1/50 gets ~same near clipping result as stereographic/perspective 0.01 near
-	pMatrix[10]	= 0;
-	pMatrix[15] = 0;
-	
-	//mat4.set(playerMatrix, playerCamera);
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -90,7 +78,7 @@ function drawWorldScene(frameTime) {
 	
 		mat4.set(playerMatrix, playerCamera);	//necessary to have playerCam and playerMatrix???
 		mat4.set(playerCamera, mvMatrix)
-
+		
 		//draw level cube
 		gl.useProgram(activeProg);
 		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 0.4, 0.4, 1.0]);	//RED
@@ -104,6 +92,15 @@ function drawWorldScene(frameTime) {
 			break;
 		}
 		//drawObjectFromBuffers(cubeBuffers, activeProg);
+		
+		//draw other objects in scene
+		mat4.translate(mvMatrix, [2, 0, 0]);
+		gl.uniform4fv(activeProg.uniforms.uColor, [0.4, 1.0, 0.4, 1.0]);	//GREEN
+		drawObjectFromBuffers(sphereBuffers, activeProg);
+		mat4.translate(mvMatrix, [-4, 0, 0]);
+		gl.uniform4fv(activeProg.uniforms.uColor, [0.4, 0.4, 1.0, 1.0]);	//BLUE
+		drawObjectFromBuffers(sphereBuffers, activeProg);
+		
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
@@ -150,7 +147,7 @@ function setMatrixUniforms(shaderProgram) {
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	mat4.identity(playerMatrix);
-	mat4.translate(playerMatrix, [0,0,-2]);
+	mat4.translate(playerMatrix, [0,0,-4]);
 }
 
 
@@ -199,7 +196,6 @@ function init(){
 	gl.clearColor(0.0, 0.1, 0.1, 1.0);
     gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
-	gl.cullFace(gl.FRONT)
 	
 	setupScene();
 		
