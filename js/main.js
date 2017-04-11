@@ -3,16 +3,16 @@ var shaderProgramPosColor;
 var shaderProgramCubemapProj;
 function initShaders(){
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
-		attributes:["aVertexPosition"],
+		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uColor"]
 	});
 	console.log("loaded 1st shader");
 	shaderProgramPosColor = loadShader( "shader-poscolor-vs", "shader-poscolor-fs",{
-		attributes:["aVertexPosition"],
+		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uColor"]
 	});
 	shaderProgramCubemapProj = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
-		attributes:["aVertexPosition"],
+		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix"]
 	});
 }
@@ -48,8 +48,8 @@ function initBuffers(){
 			bufferArrayData(bufferObj.vertexTextureCoordBuffer, sourceData.uvcoords, 2);
 		}
 		
-		//bufferObj.vertexNormalBuffer= gl.createBuffer();
-		//bufferArrayData(bufferObj.vertexNormalBuffer, sourceData.normals, 3);
+		bufferObj.vertexNormalBuffer= gl.createBuffer();
+		bufferArrayData(bufferObj.vertexNormalBuffer, sourceData.normals, 3);
 
 		bufferObj.vertexIndexBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferObj.vertexIndexBuffer);
@@ -61,7 +61,7 @@ function initBuffers(){
 	function loadBlenderExport(meshToLoad){
 		return {
 			vertices: meshToLoad.vertices,
-			//normals: meshToLoad.normals,
+			normals: meshToLoad.normals,
 			//uvcoords: meshToLoad.texturecoords?meshToLoad.texturecoords[0]:false,
 			indices: [].concat.apply([],meshToLoad.faces)	//trick from https://www.youtube.com/watch?v=sM9n73-HiNA t~ 28:30
 		}	
@@ -102,7 +102,7 @@ function drawScene(frameTime){
 	}
 	
 	
-	mat4.perspective(60, gl.viewportWidth/ gl.viewportHeight, 0.1, 10, pMatrix);
+	mat4.perspective(60, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix);
 	
 	//setup for drawing to screen
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);

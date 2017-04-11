@@ -52,6 +52,7 @@
 <!-- vertex shader -->
 <script id="shader-simple-vs" type="x-shader/x-vertex">
 	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
 				
@@ -76,13 +77,14 @@
 <!-- vertex shader -->
 <script id="shader-poscolor-vs" type="x-shader/x-vertex">
 	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
 	varying vec4 vColor;
 			
 	void main(void) {
 		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-		vColor = vec4(0.5,0.5,0.5, 0.0) + vec4(aVertexPosition, 1.0);
+		vColor = vec4(0.5,0.5,0.5, 0.0) + vec4(aVertexNormal, 1.0);
 	}
 </script>
 
@@ -102,14 +104,14 @@
 <!-- vertex shader -->
 <script id="shader-cubemap-vs" type="x-shader/x-vertex">
 	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
 	varying vec3 vPos;
 
 	void main(void) {
 		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-		//vPos = aVertexPosition;
-		vPos = vec3(aVertexPosition.x, -aVertexPosition.y, -aVertexPosition.z );
+		vPos = vec3(aVertexNormal.x, -aVertexNormal.y, -aVertexNormal.z );
 	}
 </script>
 
