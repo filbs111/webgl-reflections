@@ -1,21 +1,30 @@
 var shaderProgramColored;
+var shaderProgramPosColor;
 function initShaders(){
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
 		attributes:["aVertexPosition"],
 		uniforms:["uPMatrix","uMVMatrix","uColor"]
 	});
 	console.log("loaded 1st shader");
+	shaderProgramPosColor = loadShader( "shader-poscolor-vs", "shader-poscolor-fs",{
+		attributes:["aVertexPosition"],
+		uniforms:["uPMatrix","uMVMatrix","uColor"]
+	});
 }
 
 var sphereBuffers={};
 var cubeBuffers={};
+var octoFrameBuffers={};
 var teapotBuffers={};
+var sshipBuffers={};
 function initBuffers(){
 	
+	var octoFrameBlenderObject = loadBlenderExport(octoFrameData.meshes[0]);
 	var teapotObject = loadBlenderExport(teapotData);	//isn't actually a blender export - just a obj json
 
 	loadBufferData(sphereBuffers, makeSphereData(61,32,1));
 	loadBufferData(cubeBuffers, levelCubeData);
+	loadBufferData(octoFrameBuffers, octoFrameBlenderObject);
 	loadBufferData(teapotBuffers, teapotObject);
 
 	function bufferArrayData(buffer, arr, size){
@@ -74,7 +83,7 @@ function drawScene(frameTime){
 
 function drawWorldScene(frameTime) {		
 		//console.log("drawing...");
-		var activeProg = shaderProgramColored;
+		var activeProg = shaderProgramPosColor;
 	
 		mat4.set(playerMatrix, playerCamera);	//necessary to have playerCam and playerMatrix???
 		mat4.set(playerCamera, mvMatrix)
@@ -90,17 +99,28 @@ function drawWorldScene(frameTime) {
 			case "teapot":
 				drawObjectFromBuffers(teapotBuffers, activeProg);
 			break;
+			case "octoframe":
+				drawObjectFromBuffers(octoFrameBuffers, activeProg);
+			break;
 		}
+
 		//drawObjectFromBuffers(cubeBuffers, activeProg);
 		
 		//draw other objects in scene
+		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 0.4, 1.0]);	//WHITE
+
 		mat4.translate(mvMatrix, [2, 0, 0]);
-		gl.uniform4fv(activeProg.uniforms.uColor, [0.4, 1.0, 0.4, 1.0]);	//GREEN
-		drawObjectFromBuffers(sphereBuffers, activeProg);
+		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//right
 		mat4.translate(mvMatrix, [-4, 0, 0]);
-		gl.uniform4fv(activeProg.uniforms.uColor, [0.4, 0.4, 1.0, 1.0]);	//BLUE
-		drawObjectFromBuffers(sphereBuffers, activeProg);
-		
+		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//left
+		mat4.translate(mvMatrix, [2, 2, 0]);
+		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//top
+		mat4.translate(mvMatrix, [0, -4, 0]);
+		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//bottom
+		mat4.translate(mvMatrix, [0, 2, 2]);
+		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//front
+		mat4.translate(mvMatrix, [0, 0, -4]);
+		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//back
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
@@ -182,7 +202,7 @@ function init(){
 	document.body.appendChild( stats.dom );
 
 	var gui = new dat.GUI();
-	var mydropdown = gui.add(guiParams, 'shape', ['sphere', 'teapot']).onChange(function(v){console.log("changed " + v);});
+	var mydropdown = gui.add(guiParams, 'shape', ['sphere', 'teapot', 'octoframe']).onChange(function(v){console.log("changed " + v);});
 		//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 		
 	

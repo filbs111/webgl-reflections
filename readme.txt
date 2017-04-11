@@ -21,9 +21,9 @@ TODO
 
 done:
 draw object that will reflect 
+draw an environment around object
 
 todo:
-draw an environment around object
 allow camera to move (controls)
 draw cubemap from object centre
 shader that projects cubemap onto surface of "reflecting" object (vert shader?)
