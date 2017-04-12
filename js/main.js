@@ -1,6 +1,7 @@
 var shaderProgramColored;
 var shaderProgramPosColor;
 var shaderProgramCubemapProj;
+var shaderProgramDistantRefl;
 function initShaders(){
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
@@ -14,6 +15,10 @@ function initShaders(){
 	shaderProgramCubemapProj = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix"]
+	});
+	shaderProgramDistantRefl = loadShader( "shader-reflect-vs", "shader-cubemap-fs",{
+		attributes:["aVertexPosition", "aVertexNormal"],
+		uniforms:["uPMatrix","uMVMatrix","uEyePos"]
 	});
 }
 
@@ -122,10 +127,19 @@ function drawWorldScene(frameTime, drawReflector) {
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 		//use cubemap for centre object
+		var activeProg
 		if (drawReflector){
-			
-			var activeProg = shaderProgramCubemapProj;
-			gl.useProgram(activeProg);
+			switch (guiParams.mappingType){
+				case "centre projection":
+					activeProg = shaderProgramCubemapProj;
+					gl.useProgram(activeProg);
+				break;
+				case "distant reflection":
+					activeProg = shaderProgramDistantRefl;
+					gl.useProgram(activeProg);
+					gl.uniform3fv(activeProg.uniforms.uEyePos, storedPlayerPos);
+				break;
+			}
 					
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
@@ -283,6 +297,7 @@ function initTexture() {
 
 var guiParams={
 	shape: 'sphere',
+	mappingType: 'centre projection'
 };
 
 var stats;
@@ -294,9 +309,9 @@ function init(){
 	document.body.appendChild( stats.dom );
 
 	var gui = new dat.GUI();
-	var mydropdown = gui.add(guiParams, 'shape', ['sphere', 'teapot', 'octoframe']).onChange(function(v){console.log("changed " + v);});
+	gui.add(guiParams, 'shape', ['sphere', 'teapot', 'octoframe']).onChange(function(v){console.log("changed " + v);});
+	gui.add(guiParams, 'mappingType', ['centre projection', 'distant reflection']).onChange(function(v){console.log("changed " + v);});
 		//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
-		
 	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
@@ -428,9 +443,11 @@ function rotatePlayer(vec){
 	setPlayerTranslation(playerPosition);
 }
 
+var storedPlayerPos;
 function setPlayerTranslation(posArray){
 	playerMatrix[12]=0;	//zero translation components
 	playerMatrix[13]=0;
 	playerMatrix[14]=0;
+	storedPlayerPos = posArray;
 	mat4.translate(playerMatrix, posArray);
 }

@@ -90,6 +90,27 @@
 
 
 
+<!-- simple reflection shader -->
+<!-- reuses shader-cubemap-fs -->
+<!-- vertex shader -->
+<script id="shader-reflect-vs" type="x-shader/x-vertex">
+	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+	uniform vec3 uEyePos;
+	varying vec3 vPos;	//reflected position
+			
+	void main(void) {
+		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+		vec3 adjustedEyePos = uEyePos - aVertexPosition;
+		vPos = -adjustedEyePos + 2.0*aVertexNormal*dot(adjustedEyePos, aVertexNormal);
+		vPos = vec3(-vPos.x, vPos.y, vPos.z);
+	}
+</script>
+
+
+
 <!-- cube mapping simple projection-->
 <script id="shader-cubemap-fs" type="x-shader/x-fragment">
 	precision mediump float;

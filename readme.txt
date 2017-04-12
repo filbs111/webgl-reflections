@@ -26,10 +26,10 @@ allow camera to move (controls)
 draw cubemap from object centre
 shader that projects cubemap onto surface of "reflecting" object (vert shader?)
 shader that uses object normals to instead of position for same (ie independent of cam position)
-
+shader that does reflection correct for distant reflected items
 todo:
-shader that does attempt to do actual reflection (dependent on cam position) - 2 variations - using vert normal, and "perfect sphere" normal.
-option to displace cubemap rendering point (dependent on camera position)
+option to displace cubemap rendering point (dependent on camera position) from centre of sphere to "optimal" point
+
 ----
 ??? option to render something approaching what will finally do - not true reflection vector (similar to parabolic reflector)
 vertex rendering (not sure what equations here to get things working ideally - can likely work out reflection "direction" ok,
