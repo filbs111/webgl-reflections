@@ -14,7 +14,7 @@ function initShaders(){
 	});
 	shaderProgramCubemapProj = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
-		uniforms:["uPMatrix","uMVMatrix"]
+		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
 	});
 	shaderProgramDistantRefl = loadShader( "shader-reflect-vs", "shader-cubemap-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
@@ -32,7 +32,7 @@ function initBuffers(){
 	var octoFrameBlenderObject = loadBlenderExport(octoFrameData.meshes[0]);
 	var teapotObject = loadBlenderExport(teapotData);	//isn't actually a blender export - just a obj json
 
-	loadBufferData(sphereBuffers, makeSphereData(61,32,1));
+	loadBufferData(sphereBuffers, makeSphereData(99,50,1));
 	loadBufferData(cubeBuffers, levelCubeData);
 	loadBufferData(octoFrameBuffers, octoFrameBlenderObject);
 	loadBufferData(teapotBuffers, teapotObject);
@@ -82,6 +82,15 @@ function drawScene(frameTime){
 	
 	
 	//render cubemap views
+	switch (guiParams.projectionPoint){
+		case "centre":
+			offsetPoint=offsetPointZero;
+		break;
+		case "offset":
+			offsetPoint=offsetPointStored;				
+		break;
+	}
+	
 	var rotsY=[
 				0.5*Math.PI,-0.5*Math.PI,0,0,0,Math.PI
 			];
@@ -101,7 +110,8 @@ function drawScene(frameTime){
 		mat4.identity(playerCamera);
 		mat4.rotateY(playerCamera, rotsY[ii]);
 		mat4.rotateX(playerCamera, rotsX[ii]);
-		
+		mat4.translate(playerCamera, offsetPoint);
+
 		//mat4.multiply(playerCamera, playerMatrix, playerCamera);
 		drawWorldScene(frameTime, false);
 	}
@@ -130,9 +140,12 @@ function drawWorldScene(frameTime, drawReflector) {
 		var activeProg
 		if (drawReflector){
 			switch (guiParams.mappingType){
-				case "centre projection":
+				case "projection":
 					activeProg = shaderProgramCubemapProj;
 					gl.useProgram(activeProg);
+					gl.uniform3fv(activeProg.uniforms.uCentrePos, offsetPoint);
+					//gl.uniform3fv(activeProg.uniforms.uCentrePos, [Math.random(),Math.random(),Math.random()]);
+
 				break;
 				case "distant reflection":
 					activeProg = shaderProgramDistantRefl;
@@ -140,7 +153,7 @@ function drawWorldScene(frameTime, drawReflector) {
 					gl.uniform3fv(activeProg.uniforms.uEyePos, storedPlayerPos);
 				break;
 			}
-					
+				
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
 			gl.uniform1i(activeProg.uniforms.uSampler, 0);
@@ -297,7 +310,8 @@ function initTexture() {
 
 var guiParams={
 	shape: 'sphere',
-	mappingType: 'centre projection'
+	mappingType: 'projection',
+	projectionPoint: 'centre'
 };
 
 var stats;
@@ -310,7 +324,8 @@ function init(){
 
 	var gui = new dat.GUI();
 	gui.add(guiParams, 'shape', ['sphere', 'teapot', 'octoframe']).onChange(function(v){console.log("changed " + v);});
-	gui.add(guiParams, 'mappingType', ['centre projection', 'distant reflection']).onChange(function(v){console.log("changed " + v);});
+	gui.add(guiParams, 'mappingType', ['projection', 'distant reflection']).onChange(function(v){console.log("changed " + v);});
+	gui.add(guiParams, 'projectionPoint', ['centre', 'offset']).onChange(function(v){console.log("changed " + v);});
 		//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 	
 	window.addEventListener("keydown",function(evt){
@@ -444,10 +459,25 @@ function rotatePlayer(vec){
 }
 
 var storedPlayerPos;
+var offsetPointZero=[0,0,0];
+var offsetPointStored=[0,0,0];	//will update
+var offsetPoint;
 function setPlayerTranslation(posArray){
 	playerMatrix[12]=0;	//zero translation components
 	playerMatrix[13]=0;
 	playerMatrix[14]=0;
 	storedPlayerPos = posArray;
+	
+	//cubemap camera point at A/(2A-1) where A=position of player camera
+	var storedPlayerPosMag=0;
+	for (var cc=0;cc<3;cc++){
+		storedPlayerPosMag+= storedPlayerPos[cc]*storedPlayerPos[cc];
+	}
+	storedPlayerPosMag=Math.sqrt(storedPlayerPosMag);
+	var denominator = 2*storedPlayerPosMag-1;
+	for (var cc=0;cc<3;cc++){
+		offsetPointStored[cc] = storedPlayerPos[cc]/denominator;
+	}	
+	
 	mat4.translate(playerMatrix, posArray);
 }

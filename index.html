@@ -128,11 +128,13 @@
 	attribute vec3 aVertexNormal;
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
+	uniform vec3 uCentrePos;
 	varying vec3 vPos;
 
 	void main(void) {
 		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-		vPos = vec3(aVertexNormal.x, -aVertexNormal.y, -aVertexNormal.z );
+		vPos = aVertexPosition + uCentrePos;
+		vPos = vec3(vPos.x, -vPos.y, -vPos.z );
 	}
 </script>
 

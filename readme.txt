@@ -27,10 +27,10 @@ draw cubemap from object centre
 shader that projects cubemap onto surface of "reflecting" object (vert shader?)
 shader that uses object normals to instead of position for same (ie independent of cam position)
 shader that does reflection correct for distant reflected items
-todo:
-option to displace cubemap rendering point (dependent on camera position) from centre of sphere to "optimal" point
+option to displace cubemap rendering point (dependent on camera position) from centre of sphere to "optimal" point A/(2|A|-1), where A is position of player camera
 
-----
+todo:
+correct sphere reflection via cubemap using vertex shader when rendering cubemap views
 ??? option to render something approaching what will finally do - not true reflection vector (similar to parabolic reflector)
 vertex rendering (not sure what equations here to get things working ideally - can likely work out reflection "direction" ok,
 but how to scale homogenous co-ord such that works well....)
