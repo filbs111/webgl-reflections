@@ -32,7 +32,7 @@ function initBuffers(){
 	var octoFrameBlenderObject = loadBlenderExport(octoFrameData.meshes[0]);
 	var teapotObject = loadBlenderExport(teapotData);	//isn't actually a blender export - just a obj json
 
-	loadBufferData(sphereBuffers, makeSphereData(99,50,1));
+	loadBufferData(sphereBuffers, makeSphereData(199,100,1));
 	loadBufferData(cubeBuffers, levelCubeData);
 	loadBufferData(octoFrameBuffers, octoFrameBlenderObject);
 	loadBufferData(teapotBuffers, teapotObject);
@@ -76,6 +76,8 @@ function initBuffers(){
 function drawScene(frameTime){
 	resizecanvas();
 
+	movePlayerOutsideSphere();
+	
 	requestAnimationFrame(drawScene);
 	stats.end();
 	stats.begin();
@@ -100,7 +102,7 @@ function drawScene(frameTime){
 	gl.clearColor(1.0, 0.1, 0.1, 1.0);
 	for (var ii=0;ii<6;ii++){
 	//for (var ii=0;ii<1;ii++){
-		mat4.perspective( 90.0, 1.0, 0.1, 100, pMatrix);	
+		mat4.perspective( 90.0, 1.0, 0.001, 100, pMatrix);	
 		var framebuffer = cubemapFramebuffer[ii];
 		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 		gl.viewport(0, 0, framebuffer.width, framebuffer.height);
@@ -117,7 +119,7 @@ function drawScene(frameTime){
 	}
 	
 	
-	mat4.perspective(60, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix);
+	mat4.perspective(60, gl.viewportWidth/ gl.viewportHeight, 0.001, 100, pMatrix);
 	
 	//setup for drawing to screen
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -139,6 +141,8 @@ function drawWorldScene(frameTime, drawReflector) {
 		//use cubemap for centre object
 		var activeProg
 		if (drawReflector){
+			//gl.depthFunc(gl.ALWAYS);
+
 			switch (guiParams.mappingType){
 				case "projection":
 					activeProg = shaderProgramCubemapProj;
@@ -157,7 +161,7 @@ function drawWorldScene(frameTime, drawReflector) {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
 			gl.uniform1i(activeProg.uniforms.uSampler, 0);
-					
+			
 			switch (guiParams.shape){
 				case "sphere":
 					drawObjectFromBuffers(sphereBuffers, activeProg);
@@ -169,6 +173,8 @@ function drawWorldScene(frameTime, drawReflector) {
 					drawObjectFromBuffers(octoFrameBuffers, activeProg);
 				break;
 			}
+			
+			//gl.depthFunc(gl.LEQUAL);
 		}
 		
 		//draw other objects in scene
@@ -311,7 +317,7 @@ function initTexture() {
 var guiParams={
 	shape: 'sphere',
 	mappingType: 'projection',
-	projectionPoint: 'centre'
+	projectionPoint: 'offset'
 };
 
 var stats;
@@ -331,18 +337,19 @@ function init(){
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
+		var controlSpeed=0.025;
 		switch (evt.keyCode){
 			case 87:				//W
-				movePlayerFwd(0.1);
+				movePlayerFwd(controlSpeed);
 				break;
 			case 83:				//S
-				movePlayerFwd(-0.1);
+				movePlayerFwd(-controlSpeed);
 				break;
 			case 65:				//A
-				movePlayerLeft(0.1);
+				movePlayerLeft(controlSpeed);
 				break;
 			case 68:				//D
-				movePlayerLeft(-0.1);
+				movePlayerLeft(-controlSpeed);
 				break;
 			case 39:
 				turnPlayer(0.02);
@@ -357,10 +364,10 @@ function init(){
 				rollPlayer(0.02);	
 				break;
 			case 32:				//spacebar
-				movePlayerUp(-0.1);
+				movePlayerUp(-controlSpeed);
 				break;
 			case 17:				//ctrl
-				movePlayerUp(0.1);
+				movePlayerUp(controlSpeed);
 				break;
 			default:
 				willPreventDefault=false;
@@ -456,6 +463,20 @@ function rotatePlayer(vec){
 	mat4.rotate(rotMat, rotationMag, [vec[0]/rotationMag, vec[1]/rotationMag, vec[2]/rotationMag]);	//TODO find or make method taking vector instead of separate unit axis/angle
 	mat4.multiply(rotMat, playerMatrix, playerMatrix);
 	setPlayerTranslation(playerPosition);
+}
+function movePlayerOutsideSphere(){
+	var posMagSq=0;
+	for (var cc=0;cc<3;cc++){
+		posMagSq+=playerPosition[cc]*playerPosition[cc];
+	}
+	posMagSq/=1.005;	//(square of rad which to limit to ( drawn sphere rad =1 )
+	if (posMagSq<1){
+		var posMag = Math.sqrt(posMagSq);
+		for (var cc=0;cc<3;cc++){
+			playerPosition[cc]/=posMag;
+		}
+		setPlayerTranslation(playerPosition);
+	}
 }
 
 var storedPlayerPos;

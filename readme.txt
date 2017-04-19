@@ -28,9 +28,31 @@ shader that projects cubemap onto surface of "reflecting" object (vert shader?)
 shader that uses object normals to instead of position for same (ie independent of cam position)
 shader that does reflection correct for distant reflected items
 option to displace cubemap rendering point (dependent on camera position) from centre of sphere to "optimal" point A/(2|A|-1), where A is position of player camera
+cap player position outside sphere.
 
 todo:
-correct sphere reflection via cubemap using vertex shader when rendering cubemap views
-??? option to render something approaching what will finally do - not true reflection vector (similar to parabolic reflector)
-vertex rendering (not sure what equations here to get things working ideally - can likely work out reflection "direction" ok,
+draw sphere without near clip? apparently not a standard gl option - should work around. https://www.opengl.org/archives/resources/faq/technical/clipping.htm
+2 worlds. option to toggle reflect and portal. (toggles position cap too)
+
+CLIPPING
+ability to drop object at player position (frame object will be better to see how functions - sphere insuffient)
+ability to shoot bullets and see them go through portal
+z normalisation option so can depth clip across sphere surface
+add something to scene so can see failure due to z normalisation (eg thin box in front of larger thin box)
+alternate option to depth clip by clip plane (for each object crossing boundary)
+
+CUBEMAP IMPROVEMENTS
+aligning to point at player
+disable drawing of "back" view?
+limit drawing of side views?
+scaling so facing pix res proportional to size on screen
+skewing?
+
+DIRECT RENDERING
+direct to screen vertex rendering (not sure what equations here to get things working ideally - can likely work out reflection "direction" ok,
 but how to scale homogenous co-ord such that works well....)
+decide what rules have to follow to ensure that z interpolation doesn't cause artefacts
+
+"CORRECTED" REFLECTION
+(not just simple projection from sweet spot)
+
