@@ -538,6 +538,7 @@ function movePlayerOutsideSphere(){
 			for (var cc=0;cc<3;cc++){
 				playerPosition[cc]*=-1;
 			}
+			mat4.rotate(playerMatrix, Math.PI, playerPosition);
 			switchWorld();
 		}	
 		
