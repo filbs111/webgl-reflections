@@ -35,6 +35,7 @@ draw sphere without near clip? apparently not a standard gl option - should work
 2 worlds. option to toggle reflect and portal. (toggles position cap too)
 
 CLIPPING
+see if can simply use "discard" in frag shader. https://stackoverflow.com/questions/22628186/glclipplane-is-there-an-equivalent-in-webgl
 ability to drop object at player position (frame object will be better to see how functions - sphere insuffient)
 ability to shoot bullets and see them go through portal
 z normalisation option so can depth clip across sphere surface

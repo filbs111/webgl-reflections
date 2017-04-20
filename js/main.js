@@ -185,19 +185,13 @@ function drawWorldScene(frameTime, drawReflector) {
 		//TODO disable texture??
 		
 		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 1.0, 1.0]);	//WHITE
-
-		mat4.translate(mvMatrix, [2, 0, 0]);
-		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//right
-		mat4.translate(mvMatrix, [-4, 0, 0]);
-		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//left
-		mat4.translate(mvMatrix, [2, 2, 0]);
-		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//top
-		mat4.translate(mvMatrix, [0, -4, 0]);
-		drawObjectFromBuffers(sphereBuffers, activeProg);	//bottom
-		mat4.translate(mvMatrix, [0, 2, 2]);
-		drawObjectFromBuffers(octoFrameBuffers, activeProg);	//front
-		mat4.translate(mvMatrix, [0, 0, -4]);
-		drawObjectFromBuffers(teapotBuffers, activeProg);	//back
+	
+		var itemsToDraw = currentWorld.items;
+		for (var ii in itemsToDraw){
+			var thisItem = itemsToDraw[ii];
+			mat4.translate(mvMatrix, thisItem.trans);
+			drawObjectFromBuffers(thisItem.buffers, activeProg);
+		}
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
@@ -404,6 +398,16 @@ function init(){
 
 
 var playerPosition = [0,0,0];
+var currentWorld = {
+	items: [{trans:[2, 0, 0], buffers:octoFrameBuffers}, //right
+			{trans:[-4, 0, 0], buffers:octoFrameBuffers}, //left
+			{trans:[2, 2, 0], buffers:octoFrameBuffers}, //top
+			{trans:[0, -4, 0], buffers:sphereBuffers}, //bottom
+			{trans:[0, 2, 2], buffers:octoFrameBuffers}, //front
+			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
+			]
+};
+
 function movePlayerFwd(amount){	
 	playerPosition[0] += amount*playerMatrix[2];
 	playerPosition[1] += amount*playerMatrix[6];
