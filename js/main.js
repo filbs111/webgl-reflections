@@ -1,7 +1,9 @@
 var shaderProgramColored;
 var shaderProgramPosColor;
-var shaderProgramCubemapProj;
-var shaderProgramDistantRefl;
+var reflProgs={};
+var portalProgs={};
+var portalActive=false;
+
 function initShaders(){
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
@@ -12,11 +14,20 @@ function initShaders(){
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uColor"]
 	});
-	shaderProgramCubemapProj = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
+	reflProgs.projection = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
 	});
-	shaderProgramDistantRefl = loadShader( "shader-reflect-vs", "shader-cubemap-fs",{
+	reflProgs.distant = loadShader( "shader-reflect-vs", "shader-cubemap-fs",{
+		attributes:["aVertexPosition", "aVertexNormal"],
+		uniforms:["uPMatrix","uMVMatrix","uEyePos"]
+	});
+	
+	portalProgs.projection = loadShader( "shader-cubemap-vs", "shader-cubemapportal-fs",{
+		attributes:["aVertexPosition", "aVertexNormal"],
+		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
+	});
+	portalProgs.distant = loadShader( "shader-reflect-vs", "shader-cubemapportal-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uEyePos"]
 	});
@@ -83,13 +94,15 @@ function drawScene(frameTime){
 	stats.begin();
 	
 	
+	portalActive = (guiParams.portal=="on");
+	
 	//render cubemap views
 	switch (guiParams.projectionPoint){
 		case "centre":
 			offsetPoint=offsetPointZero;
 		break;
 		case "offset":
-			offsetPoint=offsetPointStored;				
+			offsetPoint= portalActive ? offsetPointNegative : offsetPointStored;	
 		break;
 	}
 	
@@ -100,7 +113,7 @@ function drawScene(frameTime){
 				0,0,0.5*Math.PI,-0.5*Math.PI,0,0
 			];
 	
-	var worldInBall = guiParams.portal=="on" ? otherWorld : currentWorld;
+	worldInBall = portalActive ? otherWorld : currentWorld;
 	
 	for (var ii=0;ii<6;ii++){
 	//for (var ii=0;ii<1;ii++){
@@ -112,10 +125,11 @@ function drawScene(frameTime){
 		
 		//mat4.set(playerMatrix, playerCamera);
 		mat4.identity(playerCamera);
+				
 		mat4.rotateY(playerCamera, rotsY[ii]);
 		mat4.rotateX(playerCamera, rotsX[ii]);
 		mat4.translate(playerCamera, offsetPoint);
-
+		
 		//mat4.multiply(playerCamera, playerMatrix, playerCamera);
 		drawWorldScene(frameTime, false, worldInBall);
 	}
@@ -142,20 +156,26 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 		//use cubemap for centre object
-		var activeProg
+		var activeProg;
+		
+		var offsetMultiplier = 1;
+		var shaderSet = reflProgs;
+		if (portalActive){
+			offsetMultiplier=-1;
+			shaderSet = portalProgs;
+		};
+		
 		if (drawReflector){
-			//gl.depthFunc(gl.ALWAYS);
-
 			switch (guiParams.mappingType){
 				case "projection":
-					activeProg = shaderProgramCubemapProj;
+					activeProg = shaderSet.projection;
 					gl.useProgram(activeProg);
 					gl.uniform3fv(activeProg.uniforms.uCentrePos, offsetPoint);
 					//gl.uniform3fv(activeProg.uniforms.uCentrePos, [Math.random(),Math.random(),Math.random()]);
 
 				break;
 				case "distant reflection":
-					activeProg = shaderProgramDistantRefl;
+					activeProg = shaderSet.distant;
 					gl.useProgram(activeProg);
 					gl.uniform3fv(activeProg.uniforms.uEyePos, storedPlayerPos);
 				break;
@@ -377,6 +397,12 @@ function init(){
 			case 40:
 				pitchPlayer(0.02);
 				break;
+				
+			case 84:	//T = teleport to other world.
+				var tmp=currentWorld;
+				currentWorld = otherWorld;
+				otherWorld= tmp;
+				break;
 		}
 		if (willPreventDefault){evt.preventDefault()};
 	});
@@ -403,17 +429,18 @@ function init(){
 
 
 var playerPosition = [0,0,0];
-var currentWorld = {
+var worldOne = {
 	items: [{trans:[2, 0, 0], buffers:octoFrameBuffers}, //right
 			{trans:[-4, 0, 0], buffers:octoFrameBuffers}, //left
 			{trans:[2, 2, 0], buffers:octoFrameBuffers}, //top
 			{trans:[0, -4, 0], buffers:sphereBuffers}, //bottom
 			{trans:[0, 2, 2], buffers:octoFrameBuffers}, //front
 			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
+			//{trans:[0, 1, 0], buffers:teapotBuffers}, //back
 			],
 	bgColor: [0.9, 0.4, 0.1, 1.0]
 };
-var otherWorld = {
+var worldTwo = {
 	items: [{trans:[2, 0, 0], buffers:teapotBuffers}, //right
 			{trans:[-4, 0, 0], buffers:teapotBuffers}, //left
 			{trans:[2, 2, 0], buffers:teapotBuffers}, //top
@@ -423,6 +450,8 @@ var otherWorld = {
 			],
 	bgColor: [0.0, 0.5, 0.5, 1.0]
 };
+var currentWorld = worldOne;
+var otherWorld = worldTwo;
 
 function setGlClearColor(color){
 	gl.clearColor(color[0], color[1], color[2], color[3]);
@@ -506,6 +535,7 @@ function movePlayerOutsideSphere(){
 var storedPlayerPos;
 var offsetPointZero=[0,0,0];
 var offsetPointStored=[0,0,0];	//will update
+var offsetPointNegative=[0,0,0];
 var offsetPoint;
 function setPlayerTranslation(posArray){
 	playerMatrix[12]=0;	//zero translation components
@@ -522,6 +552,7 @@ function setPlayerTranslation(posArray){
 	var denominator = 2*storedPlayerPosMag-1;
 	for (var cc=0;cc<3;cc++){
 		offsetPointStored[cc] = storedPlayerPos[cc]/denominator;
+		offsetPointNegative[cc] = -offsetPointStored[cc];
 	}	
 	
 	mat4.translate(playerMatrix, posArray);

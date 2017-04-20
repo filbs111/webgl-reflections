@@ -110,6 +110,16 @@
 </script>
 
 
+<script id="shader-cubemapportal-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	
+	varying vec3 vPos;
+	uniform samplerCube uSampler;
+	
+	void main(void) {
+		gl_FragColor = textureCube(uSampler, -vPos);
+	}
+</script>
 
 <!-- cube mapping simple projection-->
 <script id="shader-cubemap-fs" type="x-shader/x-fragment">
