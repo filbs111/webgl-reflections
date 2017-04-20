@@ -99,10 +99,12 @@ function drawScene(frameTime){
 	//render cubemap views
 	switch (guiParams.projectionPoint){
 		case "centre":
-			offsetPoint=offsetPointZero;
+			offsetPointSigned=offsetPointZero;
+			offsetPointUnsigned=offsetPointZero;
 		break;
 		case "offset":
-			offsetPoint= portalActive ? offsetPointNegative : offsetPointStored;	
+			offsetPointSigned= portalActive? offsetPointNegative:offsetPointStored;	
+			offsetPointUnsigned=offsetPointStored;
 		break;
 	}
 	
@@ -128,8 +130,8 @@ function drawScene(frameTime){
 				
 		mat4.rotateY(playerCamera, rotsY[ii]);
 		mat4.rotateX(playerCamera, rotsX[ii]);
-		mat4.translate(playerCamera, offsetPoint);
-		
+		mat4.translate(playerCamera, offsetPointSigned);
+
 		//mat4.multiply(playerCamera, playerMatrix, playerCamera);
 		drawWorldScene(frameTime, false, worldInBall);
 	}
@@ -158,10 +160,8 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		//use cubemap for centre object
 		var activeProg;
 		
-		var offsetMultiplier = 1;
 		var shaderSet = reflProgs;
 		if (portalActive){
-			offsetMultiplier=-1;
 			shaderSet = portalProgs;
 		};
 		
@@ -170,7 +170,7 @@ function drawWorldScene(frameTime, drawReflector, world) {
 				case "projection":
 					activeProg = shaderSet.projection;
 					gl.useProgram(activeProg);
-					gl.uniform3fv(activeProg.uniforms.uCentrePos, offsetPoint);
+					gl.uniform3fv(activeProg.uniforms.uCentrePos, offsetPointUnsigned);
 					//gl.uniform3fv(activeProg.uniforms.uCentrePos, [Math.random(),Math.random(),Math.random()]);
 
 				break;
@@ -399,9 +399,7 @@ function init(){
 				break;
 				
 			case 84:	//T = teleport to other world.
-				var tmp=currentWorld;
-				currentWorld = otherWorld;
-				otherWorld= tmp;
+				switchWorld();
 				break;
 		}
 		if (willPreventDefault){evt.preventDefault()};
@@ -441,7 +439,7 @@ var worldOne = {
 	bgColor: [0.9, 0.4, 0.1, 1.0]
 };
 var worldTwo = {
-	items: [{trans:[2, 0, 0], buffers:teapotBuffers}, //right
+	items: [{trans:[2, 0, 0], buffers:octoFrameBuffers}, //right
 			{trans:[-4, 0, 0], buffers:teapotBuffers}, //left
 			{trans:[2, 2, 0], buffers:teapotBuffers}, //top
 			{trans:[0, -4, 0], buffers:teapotBuffers}, //bottom
@@ -452,6 +450,12 @@ var worldTwo = {
 };
 var currentWorld = worldOne;
 var otherWorld = worldTwo;
+
+function switchWorld(){
+	var tmp=currentWorld;
+	currentWorld = otherWorld;
+	otherWorld= tmp;
+}
 
 function setGlClearColor(color){
 	gl.clearColor(color[0], color[1], color[2], color[3]);
@@ -527,7 +531,17 @@ function movePlayerOutsideSphere(){
 		var posMag = Math.sqrt(posMagSq);
 		for (var cc=0;cc<3;cc++){
 			playerPosition[cc]/=posMag;
-		}
+		}		
+		
+		if (portalActive){
+			//hack. should also rotate by 180
+			for (var cc=0;cc<3;cc++){
+				playerPosition[cc]*=-1;
+			}
+			switchWorld();
+		}	
+		
+		
 		setPlayerTranslation(playerPosition);
 	}
 }
@@ -536,7 +550,8 @@ var storedPlayerPos;
 var offsetPointZero=[0,0,0];
 var offsetPointStored=[0,0,0];	//will update
 var offsetPointNegative=[0,0,0];
-var offsetPoint;
+var offsetPointSigned;
+var offsetPointUnsigned;
 function setPlayerTranslation(posArray){
 	playerMatrix[12]=0;	//zero translation components
 	playerMatrix[13]=0;
