@@ -29,10 +29,11 @@ shader that uses object normals to instead of position for same (ie independent 
 shader that does reflection correct for distant reflected items
 option to displace cubemap rendering point (dependent on camera position) from centre of sphere to "optimal" point A/(2|A|-1), where A is position of player camera
 cap player position outside sphere.
+2 worlds. option to toggle reflect and portal. 
 
 todo:
 draw sphere without near clip? apparently not a standard gl option - should work around. https://www.opengl.org/archives/resources/faq/technical/clipping.htm
-2 worlds. option to toggle reflect and portal. (toggles position cap too)
+fly through portal. (position capped when portal off)
 
 CLIPPING
 see if can simply use "discard" in frag shader. https://stackoverflow.com/questions/22628186/glclipplane-is-there-an-equivalent-in-webgl

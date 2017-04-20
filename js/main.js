@@ -99,7 +99,9 @@ function drawScene(frameTime){
 	var rotsX=[
 				0,0,0.5*Math.PI,-0.5*Math.PI,0,0
 			];
-	gl.clearColor(1.0, 0.1, 0.1, 1.0);
+	
+	var worldInBall = guiParams.portal=="on" ? otherWorld : currentWorld;
+	
 	for (var ii=0;ii<6;ii++){
 	//for (var ii=0;ii<1;ii++){
 		mat4.perspective( 90.0, 1.0, 0.001, 100, pMatrix);	
@@ -115,7 +117,7 @@ function drawScene(frameTime){
 		mat4.translate(playerCamera, offsetPoint);
 
 		//mat4.multiply(playerCamera, playerMatrix, playerCamera);
-		drawWorldScene(frameTime, false);
+		drawWorldScene(frameTime, false, worldInBall);
 	}
 	
 	
@@ -127,13 +129,14 @@ function drawScene(frameTime){
 	
 	
 	mat4.set(playerMatrix, playerCamera);	//necessary to have playerCam and playerMatrix???
-	gl.clearColor(0.0, 0.1, 0.1, 1.0);
-
-	drawWorldScene(frameTime, true);
+	
+	drawWorldScene(frameTime, true, currentWorld);
 }
 
 
-function drawWorldScene(frameTime, drawReflector) {		
+function drawWorldScene(frameTime, drawReflector, world) {
+		setGlClearColor(world.bgColor);
+		
 		//console.log("drawing...");
 		mat4.set(playerCamera, mvMatrix)
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -186,7 +189,7 @@ function drawWorldScene(frameTime, drawReflector) {
 		
 		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 1.0, 1.0]);	//WHITE
 	
-		var itemsToDraw = currentWorld.items;
+		var itemsToDraw = world.items;
 		for (var ii in itemsToDraw){
 			var thisItem = itemsToDraw[ii];
 			mat4.translate(mvMatrix, thisItem.trans);
@@ -311,7 +314,8 @@ function initTexture() {
 var guiParams={
 	shape: 'sphere',
 	mappingType: 'projection',
-	projectionPoint: 'offset'
+	projectionPoint: 'offset',
+	portal: 'on'
 };
 
 var stats;
@@ -326,7 +330,8 @@ function init(){
 	gui.add(guiParams, 'shape', ['sphere', 'teapot', 'octoframe']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'mappingType', ['projection', 'distant reflection']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'projectionPoint', ['centre', 'offset']).onChange(function(v){console.log("changed " + v);});
-		//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
+	gui.add(guiParams, 'portal', ['on', 'off']).onChange(function(v){console.log("changed " + v);});
+	//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
@@ -405,8 +410,23 @@ var currentWorld = {
 			{trans:[0, -4, 0], buffers:sphereBuffers}, //bottom
 			{trans:[0, 2, 2], buffers:octoFrameBuffers}, //front
 			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
-			]
+			],
+	bgColor: [0.9, 0.4, 0.1, 1.0]
 };
+var otherWorld = {
+	items: [{trans:[2, 0, 0], buffers:teapotBuffers}, //right
+			{trans:[-4, 0, 0], buffers:teapotBuffers}, //left
+			{trans:[2, 2, 0], buffers:teapotBuffers}, //top
+			{trans:[0, -4, 0], buffers:teapotBuffers}, //bottom
+			{trans:[0, 2, 2], buffers:teapotBuffers}, //front
+			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
+			],
+	bgColor: [0.0, 0.5, 0.5, 1.0]
+};
+
+function setGlClearColor(color){
+	gl.clearColor(color[0], color[1], color[2], color[3]);
+}
 
 function movePlayerFwd(amount){	
 	playerPosition[0] += amount*playerMatrix[2];
