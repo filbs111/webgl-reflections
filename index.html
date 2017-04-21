@@ -115,9 +115,13 @@
 	
 	varying vec3 vPos;
 	uniform samplerCube uSampler;
-	
+	uniform vec3 uCentrePos;
+
 	void main(void) {
-		gl_FragColor = textureCube(uSampler, -vPos);
+		vec3 vPosOut = normalize(vPos);
+		vPosOut += vec3(uCentrePos.x, -uCentrePos.y, -uCentrePos.z);
+	
+		gl_FragColor = textureCube(uSampler, -vPosOut);
 	}
 </script>
 
@@ -127,9 +131,13 @@
 	
 	varying vec3 vPos;
 	uniform samplerCube uSampler;
+	uniform vec3 uCentrePos;
 	
 	void main(void) {
-		gl_FragColor = textureCube(uSampler, vPos);
+		vec3 vPosOut = normalize(vPos);
+		vPosOut += vec3(uCentrePos.x, -uCentrePos.y, -uCentrePos.z);
+		
+		gl_FragColor = textureCube(uSampler, vPosOut);
 	}
 </script>
 <!-- vertex shader -->
@@ -138,12 +146,11 @@
 	attribute vec3 aVertexNormal;
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
-	uniform vec3 uCentrePos;
 	varying vec3 vPos;
 
 	void main(void) {
 		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-		vPos = aVertexPosition + uCentrePos;
+		vPos = aVertexPosition; // + uCentrePos;
 		vPos = vec3(vPos.x, -vPos.y, -vPos.z );
 	}
 </script>
