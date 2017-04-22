@@ -146,7 +146,7 @@ function drawScene(frameTime){
 	}
 	
 	
-	mat4.perspective(110, gl.viewportWidth/ gl.viewportHeight, 0.001, 100, pMatrix);
+	mat4.perspective(90, gl.viewportWidth/ gl.viewportHeight, 0.001, 100, pMatrix);
 	
 	//setup for drawing to screen
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -394,6 +394,13 @@ var guiParams={
 	portal: 'on'
 };
 
+var mouseInfo = {
+	x:0,
+	y:0,
+	dragging: false,
+	lastPointingDir:{}
+};
+
 var stats;
 
 function init(){
@@ -464,6 +471,43 @@ function init(){
 	
 	canvas = document.getElementById("mycanvas");
 
+	canvas.addEventListener("mousedown", function(evt){
+		mouseInfo.x = evt.offsetX;
+		mouseInfo.y = evt.offsetY;
+		mouseInfo.dragging = true;
+		mouseInfo.lastPointingDir = getPointingDirectionFromScreenCoordinate({x:mouseInfo.x, y: mouseInfo.y});
+	});
+	canvas.addEventListener("mouseup", function(evt){
+		mouseInfo.dragging = false;
+	});
+	canvas.addEventListener("mouseout", function(evt){
+		mouseInfo.dragging = false;
+	});
+	canvas.addEventListener("mousemove", function(evt){
+		if (mouseInfo.dragging){
+			console.log("evt offsetX = " + evt.offsetX + ", offsetY = " + evt.offsetY);
+			console.log("moved : " + evt.movementX + ", movementY = " + evt.movementY);	//this is very nearly the same as the calculated version
+			console.log("calculated moved : " + (evt.offsetX - mouseInfo.x) + ", movementY = " + (evt.offsetY - mouseInfo.y) );
+			mouseInfo.x = evt.offsetX;
+			mouseInfo.y = evt.offsetY;
+			
+			var pointingDir = getPointingDirectionFromScreenCoordinate({x:mouseInfo.x, y: mouseInfo.y});
+			console.log("pointingDir = " + pointingDir);
+			
+			//get the direction of current and previous mouse position.
+			//do a cross product to work out the angle rotated
+			//and rotate the player by this amount
+			
+			var crossProd = crossProductHomgenous(pointingDir, mouseInfo.lastPointingDir);
+			mouseInfo.lastPointingDir = pointingDir;
+			
+			//rotate player 
+			rotatePlayer([ -crossProd.x / crossProd.w, crossProd.y / crossProd.w, crossProd.z / crossProd.w]);
+		}
+	
+	});
+	
+	
 	initGL();
 	initShaders();
 	initTexture();
@@ -628,4 +672,34 @@ function setPlayerTranslation(posArray){
 	}	
 	
 	mat4.translate(playerMatrix, posArray);
+}
+
+function getPointingDirectionFromScreenCoordinate(coords){
+	
+	var maxyvert = 1.0;	
+	var maxxvert = screenAspect;
+	
+	var xpos = maxxvert*(coords.x*2.0/gl.viewportWidth   -1.0 );
+	var ypos = maxyvert*(coords.y*2.0/gl.viewportHeight   -1.0 );
+	var radsq = xpos*xpos + ypos*ypos;
+	var zpos = 1.0;	//FOV 90 deg
+	
+	//normalise - use sending back homogenous co-ords because maybe a tiny amount more efficient since cross producting anyway
+	var mag= Math.sqrt(radsq + zpos*zpos);
+	
+	return {
+		x: xpos,
+		y: ypos,
+		z: zpos,
+		w: mag
+	}
+}
+
+function crossProductHomgenous(dir1, dir2){
+	var output ={};
+	output.x = dir1.y * dir2.z - dir1.z * dir2.y; 
+	output.y = dir1.z * dir2.x - dir1.x * dir2.z; 
+	output.z = dir1.x * dir2.y - dir1.y * dir2.x;
+	output.w = dir1.w * dir2.w;
+	return output;
 }
