@@ -3,6 +3,8 @@ var shaderProgramPosColor;
 var reflProgs={};
 var portalProgs={};
 var portalActive=false;
+var playerObjScale=0.03;
+var playerObjScaleVec=[playerObjScale,playerObjScale,playerObjScale];
 
 function initShaders(){
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
@@ -225,9 +227,43 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		
 		mat4.set(playerCamera, mvMatrix);
 		mat4.multiply(mvMatrix, invPlayerMat);
-		mat4.scale(mvMatrix,[0.1,0.1,0.1]);
+		mat4.scale(mvMatrix,playerObjScaleVec);
 		
 		drawObjectFromBuffers(cubeFrameBuffers, activeProg);
+		
+		
+		//draw player object at "opposite" spot in the world (so will see through portal)	
+		var movedPlayerMatrix = mat4.create();
+		mat4.set(playerMatrix, movedPlayerMatrix);
+		
+		movedPlayerMatrix[12]=0;	//zero translation components
+		movedPlayerMatrix[13]=0;
+		movedPlayerMatrix[14]=0;
+		
+		var posMagSq=0;
+		for (var cc=0;cc<3;cc++){
+			posMagSq+=playerPosition[cc]*playerPosition[cc];
+		}
+		
+		var invertedPlayerPos = [];
+		for (var cc=0;cc<3;cc++){
+			invertedPlayerPos[cc]=-playerPosition[cc]/posMagSq;
+			//invertedPlayerPos[cc]=playerPosition[cc];
+		}
+		//invertedPlayerPos[2]+=1;
+		
+		mat4.rotate(movedPlayerMatrix, Math.PI, playerPosition);
+		mat4.translate(movedPlayerMatrix, invertedPlayerPos);
+
+		mat4.set(movedPlayerMatrix, invPlayerMat);
+		mat4.inverse(invPlayerMat);
+		
+		mat4.set(playerCamera, mvMatrix);
+		mat4.multiply(mvMatrix, invPlayerMat);
+		mat4.scale(mvMatrix,playerObjScaleVec);
+		
+		drawObjectFromBuffers(cubeFrameBuffers, activeProg);
+		
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);

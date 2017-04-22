@@ -122,7 +122,7 @@
 		vec3 vPosOut = normalize(vPos);
 		vPosOut += vec3(uCentrePos.x, -uCentrePos.y, -uCentrePos.z);
 	
-		gl_FragColor = textureCube(uSampler, -vPosOut);
+		gl_FragColor = 0.8*textureCube(uSampler, -vPosOut); 
 	}
 </script>
 
@@ -138,7 +138,7 @@
 		vec3 vPosOut = normalize(vPos);
 		vPosOut += vec3(uCentrePos.x, -uCentrePos.y, -uCentrePos.z);
 		
-		gl_FragColor = textureCube(uSampler, vPosOut);
+		gl_FragColor = 0.8*textureCube(uSampler, vPosOut);
 	}
 </script>
 <!-- vertex shader -->
