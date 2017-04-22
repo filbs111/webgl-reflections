@@ -32,6 +32,7 @@ cap player position outside sphere.
 2 worlds. option to toggle reflect and portal. 
 fly through portal. (position capped when portal off)
 draw player at "opposite" spot in other world
+use "discard" in frag shader to not parts inside ball
 
 todo:
 draw sphere without near clip? apparently not a standard gl option - should work around. https://www.opengl.org/archives/resources/faq/technical/clipping.htm
@@ -44,12 +45,9 @@ ambient lighting - different for each world, leaks through portal (basically bal
 "perfect sphere" shader
 
 CLIPPING
-see if can simply use "discard" in frag shader. https://stackoverflow.com/questions/22628186/glclipplane-is-there-an-equivalent-in-webgl
-ability to drop object at player position (frame object will be better to see how functions - sphere insuffient)
+improve drawing of object crossing the ball, so parts seen in camera world match up with parts drawn in other world. vert shader to distort verts inside sphere?
+drawing object crossing portal only once? (non-cubemap)
 ability to shoot bullets and see them go through portal
-z normalisation option so can depth clip across sphere surface
-add something to scene so can see failure due to z normalisation (eg thin box in front of larger thin box)
-alternate option to depth clip by clip plane (for each object crossing boundary)
 
 CUBEMAP IMPROVEMENTS
 aligning to point at player

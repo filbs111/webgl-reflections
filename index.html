@@ -75,6 +75,7 @@
 		gl_FragColor = uColor * vColor;
 	}
 </script>
+
 <!-- vertex shader -->
 <script id="shader-poscolor-vs" type="x-shader/x-vertex">
 	attribute vec3 aVertexPosition;
@@ -84,6 +85,42 @@
 	varying vec4 vColor;
 			
 	void main(void) {
+		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+		vColor = vec4(0.5,0.5,0.5, 0.0) + vec4(aVertexNormal, 1.0);
+	}
+</script>
+
+
+<!-- colour from vert pos pix shader -->
+<script id="shader-poscolorwdiscard-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	uniform vec4 uColor;
+	varying vec4 vColor;
+	varying vec3 vWorldPos;
+
+	void main(void) {
+		if (dot(vWorldPos,vWorldPos)<1.0){
+			discard;
+		}
+		
+		gl_FragColor = uColor * vColor;
+	}
+</script>
+
+<!-- vertex shader -->
+<script id="shader-poscolorwdiscard-vs" type="x-shader/x-vertex">
+	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+	uniform vec3 uSpherePos;	//position of sphere relative to camera
+	varying vec4 vColor;
+	varying vec3 vWorldPos;
+	
+	void main(void) {
+		vec4 vTmp = uMVMatrix * vec4(aVertexPosition, 1.0);
+		vWorldPos = vTmp.xyz - uSpherePos;	//TODO correct this for cam offset (should just be model matrix)
+		
 		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 		vColor = vec4(0.5,0.5,0.5, 0.0) + vec4(aVertexNormal, 1.0);
 	}

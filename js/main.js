@@ -3,7 +3,7 @@ var shaderProgramPosColor;
 var reflProgs={};
 var portalProgs={};
 var portalActive=false;
-var playerObjScale=0.03;
+var playerObjScale=0.01;
 var playerObjScaleVec=[playerObjScale,playerObjScale,playerObjScale];
 
 function initShaders(){
@@ -15,6 +15,10 @@ function initShaders(){
 	shaderProgramPosColor = loadShader( "shader-poscolor-vs", "shader-poscolor-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uColor"]
+	});
+	shaderProgramPosColorWDiscard = loadShader( "shader-poscolorwdiscard-vs", "shader-poscolorwdiscard-fs",{
+		attributes:["aVertexPosition", "aVertexNormal"],
+		uniforms:["uPMatrix","uMVMatrix","uColor","uSpherePos"]
 	});
 	reflProgs.projection = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
@@ -205,9 +209,11 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		
 		//draw other objects in scene
 
-		activeProg = shaderProgramPosColor;
+		activeProg = drawReflector ? shaderProgramPosColor: shaderProgramPosColorWDiscard;
 		gl.useProgram(activeProg);
-		
+		if (!drawReflector){
+			gl.uniform3fv(activeProg.uniforms.uSpherePos, [playerCamera[12],playerCamera[13],playerCamera[14]]);	//basically co-ordinates of world 0,0,0 in current camera
+		}
 		//TODO disable texture??
 		
 		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 1.0, 1.0]);	//WHITE
@@ -358,7 +364,8 @@ function initCubemapFramebuffer()
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	mat4.identity(playerMatrix);
-	movePlayerFwd(-4);
+	movePlayerFwd(-1.5);
+	movePlayerLeft(0.5);
 }
 
 
@@ -405,7 +412,7 @@ function init(){
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
-		var controlSpeed=0.025;
+		var controlSpeed=0.01;
 		switch (evt.keyCode){
 			case 87:				//W
 				movePlayerFwd(controlSpeed);
@@ -495,7 +502,7 @@ var worldTwo = {
 			{trans:[0, 2, 2], buffers:cubeFrameBuffers}, //front
 			{trans:[0, 0, -4], buffers:cubeFrameBuffers}, //back
 			],
-	bgColor: [0.0, 0.5, 0.5, 1.0]
+	bgColor: [0.0, 0.4, 0.6, 1.0]
 };
 var currentWorld = worldOne;
 var otherWorld = worldTwo;
