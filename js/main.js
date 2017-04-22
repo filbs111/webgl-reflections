@@ -35,16 +35,19 @@ function initShaders(){
 
 var sphereBuffers={};
 var cubeBuffers={};
+var cubeFrameBuffers={};
 var octoFrameBuffers={};
 var teapotBuffers={};
 var sshipBuffers={};
 function initBuffers(){
 	
+	var cubeFrameBlenderObject = loadBlenderExport(cubeFrameData.meshes[0]);
 	var octoFrameBlenderObject = loadBlenderExport(octoFrameData.meshes[0]);
 	var teapotObject = loadBlenderExport(teapotData);	//isn't actually a blender export - just a obj json
 
 	loadBufferData(sphereBuffers, makeSphereData(199,100,1));
 	loadBufferData(cubeBuffers, levelCubeData);
+	loadBufferData(cubeFrameBuffers, cubeFrameBlenderObject);
 	loadBufferData(octoFrameBuffers, octoFrameBlenderObject);
 	loadBufferData(teapotBuffers, teapotObject);
 
@@ -137,7 +140,7 @@ function drawScene(frameTime){
 	}
 	
 	
-	mat4.perspective(60, gl.viewportWidth/ gl.viewportHeight, 0.001, 100, pMatrix);
+	mat4.perspective(110, gl.viewportWidth/ gl.viewportHeight, 0.001, 100, pMatrix);
 	
 	//setup for drawing to screen
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -196,8 +199,6 @@ function drawWorldScene(frameTime, drawReflector, world) {
 					drawObjectFromBuffers(octoFrameBuffers, activeProg);
 				break;
 			}
-			
-			//gl.depthFunc(gl.LEQUAL);
 		}
 		
 		//draw other objects in scene
@@ -215,6 +216,18 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			mat4.translate(mvMatrix, thisItem.trans);
 			drawObjectFromBuffers(thisItem.buffers, activeProg);
 		}
+		//draw the player object.
+		mat4.set(playerCamera, mvMatrix)
+		
+		var invPlayerMat = mat4.create();
+		mat4.set(playerMatrix, invPlayerMat);
+		mat4.inverse(invPlayerMat);
+		
+		mat4.set(playerCamera, mvMatrix);
+		mat4.multiply(mvMatrix, invPlayerMat);
+		mat4.scale(mvMatrix,[0.1,0.1,0.1]);
+		
+		drawObjectFromBuffers(cubeFrameBuffers, activeProg);
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
@@ -428,7 +441,7 @@ function init(){
 
 var playerPosition = [0,0,0];
 var worldOne = {
-	items: [{trans:[2, 0, 0], buffers:octoFrameBuffers}, //right
+	items: [{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
 			{trans:[-4, 0, 0], buffers:octoFrameBuffers}, //left
 			{trans:[2, 2, 0], buffers:octoFrameBuffers}, //top
 			{trans:[0, -4, 0], buffers:sphereBuffers}, //bottom
@@ -439,12 +452,12 @@ var worldOne = {
 	bgColor: [0.9, 0.4, 0.1, 1.0]
 };
 var worldTwo = {
-	items: [{trans:[2, 0, 0], buffers:octoFrameBuffers}, //right
-			{trans:[-4, 0, 0], buffers:teapotBuffers}, //left
-			{trans:[2, 2, 0], buffers:teapotBuffers}, //top
-			{trans:[0, -4, 0], buffers:teapotBuffers}, //bottom
-			{trans:[0, 2, 2], buffers:teapotBuffers}, //front
-			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
+	items: [{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
+			{trans:[-4, 0, 0], buffers:cubeFrameBuffers}, //left
+			{trans:[2, 2, 0], buffers:cubeFrameBuffers}, //top
+			{trans:[0, -4, 0], buffers:cubeFrameBuffers}, //bottom
+			{trans:[0, 2, 2], buffers:cubeFrameBuffers}, //front
+			{trans:[0, 0, -4], buffers:cubeFrameBuffers}, //back
 			],
 	bgColor: [0.0, 0.5, 0.5, 1.0]
 };
