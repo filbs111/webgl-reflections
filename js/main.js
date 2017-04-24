@@ -166,14 +166,36 @@ function drawScene(frameTime){
 
 
 function drawWorldScene(frameTime, drawReflector, world) {
+		
+		
 		setGlClearColor(world.bgColor);
 		
 		//console.log("drawing...");
-		mat4.set(playerCamera, mvMatrix)
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 		//use cubemap for centre object
 		var activeProg;
+
+		//draw an object using cubemap
+		activeProg = shaderProgramSimpleCubemap;
+		gl.useProgram(activeProg);
+
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, world.skybox);
+
+		mat4.set(playerCamera, mvMatrix);	//TODO position cubemap at player position
+		mat4.scale(mvMatrix, [50,50,50]);
+		
+		gl.disable(gl.CULL_FACE);
+		gl.disable(gl.DEPTH_TEST);
+		gl.disable(gl.DEPTH_WRITE);
+
+		drawObjectFromBuffers(sphereBuffers, activeProg);	//TODO use cube object
+	
+		gl.enable(gl.CULL_FACE);
+		gl.enable(gl.DEPTH_TEST);
+		gl.enable(gl.DEPTH_WRITE);
+		
+		mat4.set(playerCamera, mvMatrix)
 		
 		var shaderSet = reflProgs;
 		if (portalActive){
@@ -275,27 +297,12 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		mat4.scale(mvMatrix,playerObjScaleVec);
 		
 		drawObjectFromBuffers(cubeFrameBuffers, activeProg);
-		
-		
-		//draw an object using cubemap
-		activeProg = shaderProgramSimpleCubemap;
-		gl.useProgram(activeProg);
-
-		gl.bindTexture(gl.TEXTURE_CUBE_MAP, world.skybox);
-
-		mat4.identity(mvMatrix);
-		mat4.scale(mvMatrix,playerObjScaleVec);
-		mat4.translate(mvMatrix, [0,0,-4]);
-
-		drawObjectFromBuffers(sphereBuffers, activeProg);
-		
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
 	drawObjectFromPreppedBuffers(bufferObj, shaderProg);
 }
 function prepBuffersForDrawing(bufferObj, shaderProg){
-	gl.enable(gl.CULL_FACE);
 	gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexPositionBuffer);
     gl.vertexAttribPointer(shaderProg.attributes.aVertexPosition, bufferObj.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 	
@@ -460,7 +467,7 @@ function initTexture() {
 	texture.image.src = "img/0033.jpg";
 	
 	worldOne.skybox = loadCubeMap("img/skyboxes/gg");
-	worldTwo.skybox = loadCubeMap("img/skyboxes/cloudy11");	//loading this results in oddly using this texture though trying to use skyboxTexture1
+	worldTwo.skybox = loadCubeMap("img/skyboxes/cloudy11a");	//loading this results in oddly using this texture though trying to use skyboxTexture1
 }
 
 
@@ -592,8 +599,6 @@ function init(){
 	initBuffers();
   
 	gl.clearColor(0.0, 0.1, 0.1, 1.0);
-    gl.enable(gl.DEPTH_TEST);
-	gl.enable(gl.CULL_FACE);
 	
 	setupScene();
 		
