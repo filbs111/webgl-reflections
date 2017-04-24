@@ -280,8 +280,8 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		//draw an object using cubemap
 		activeProg = shaderProgramSimpleCubemap;
 		gl.useProgram(activeProg);
-		//if (typeof skyboxImages !== 'undefined'){switchCubemapImages(skyboxImages);}
-		gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture1);	//if don't have this here, skyboxTexture1 gets used for dynamic cubemap too? WHAT THE FUCK
+
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, world.skybox);
 
 		mat4.identity(mvMatrix);
 		mat4.scale(mvMatrix,playerObjScaleVec);
@@ -289,20 +289,6 @@ function drawWorldScene(frameTime, drawReflector, world) {
 
 		drawObjectFromBuffers(sphereBuffers, activeProg);
 		
-		gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture2);
-
-		mat4.identity(mvMatrix);
-		mat4.scale(mvMatrix,playerObjScaleVec);
-		mat4.translate(mvMatrix, [0,1,-4]);
-
-		drawObjectFromBuffers(sphereBuffers, activeProg);
-		
-	
-		
-		//gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
-
-		//setupDynamicCubemap();
-
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
@@ -401,7 +387,6 @@ function initCubemapFramebuffer(){
 
 //cube map code from http://www.humus.name/cubemapviewer.js (relatively unmodified)
 //TODO generalise code and share with above
-var skyboxImages;
 function loadCubeMap(base)
 {
 	var texture  = gl.createTexture();
@@ -435,9 +420,6 @@ function loadCubeMap(base)
 				gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 				gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 				gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-				
-				//store so can later switch ????
-				skyboxImages[face]=image;
 								
 				//image_counter++;
 				//if (image_counter == 6)
@@ -453,32 +435,14 @@ function loadCubeMap(base)
 	return texture;
 }
 
-function switchCubemapImages(storedImages){
-	//seems a bizarre way to do things. possibly there's a sensible way.
-	//this seems to work for switching between cubemap textures, but doesn't work for switching to dynamic cubemap
-	for (var ii in storedImages){
-		gl.texImage2D(ii, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, storedImages[ii]);
-	}
-}
-function setupDynamicCubemap(){
-	for (var ii in cubemapFacelist){
-		var face=cubemapFacelist[ii];
-		gl.texImage2D(face, 0, gl.RGBA, cubemapSize, cubemapSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-	}
-}
-
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	mat4.identity(playerMatrix);
-	//movePlayerFwd(-1.5);
-	//movePlayerLeft(0.6);
 	movePlayer([0.3,-0.2,-1.5]);
 }
 
 
 var texture;
-var skyboxTexture1;
-var skyboxTexture2;
 
 function initTexture() {
 	texture = gl.createTexture();
@@ -495,8 +459,8 @@ function initTexture() {
 	}
 	texture.image.src = "img/0033.jpg";
 	
-	skyboxTexture1 = loadCubeMap("img/skyboxes/gg");
-	skyboxTexture2 = loadCubeMap("img/skyboxes/cloudy11");	//loading this results in oddly using this texture though trying to use skyboxTexture1
+	worldOne.skybox = loadCubeMap("img/skyboxes/gg");
+	worldTwo.skybox = loadCubeMap("img/skyboxes/cloudy11");	//loading this results in oddly using this texture though trying to use skyboxTexture1
 }
 
 
