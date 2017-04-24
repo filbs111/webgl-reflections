@@ -46,6 +46,7 @@ function initShaders(){
 }
 
 var sphereBuffers={};
+var sphereLowResBuffers={};
 var cubeBuffers={};
 var cubeFrameBuffers={};
 var octoFrameBuffers={};
@@ -57,7 +58,8 @@ function initBuffers(){
 	var octoFrameBlenderObject = loadBlenderExport(octoFrameData.meshes[0]);
 	var teapotObject = loadBlenderExport(teapotData);	//isn't actually a blender export - just a obj json
 
-	loadBufferData(sphereBuffers, makeSphereData(199,100,1));
+	loadBufferData(sphereBuffers, makeSphereData(99,200,1));
+	loadBufferData(sphereLowResBuffers, makeSphereData(19,40,1));
 	loadBufferData(cubeBuffers, levelCubeData);
 	loadBufferData(cubeFrameBuffers, cubeFrameBlenderObject);
 	loadBufferData(octoFrameBuffers, octoFrameBlenderObject);
@@ -191,7 +193,7 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			gl.disable(gl.DEPTH_TEST);
 			gl.disable(gl.DEPTH_WRITE);
 
-			drawObjectFromBuffers(sphereBuffers, activeProg);	//TODO use cube object
+			drawObjectFromBuffers(sphereLowResBuffers, activeProg);	//TODO use cube object
 		}
 		
 		gl.enable(gl.CULL_FACE);
@@ -619,7 +621,7 @@ var worldOne = {
 	items: [{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
 			{trans:[-4, 0, 0], buffers:octoFrameBuffers}, //left
 			{trans:[2, 2, 0], buffers:octoFrameBuffers}, //top
-			{trans:[0, -4, 0], buffers:sphereBuffers}, //bottom
+			{trans:[0, -4, 0], buffers:sphereLowResBuffers}, //bottom
 			{trans:[0, 2, 2], buffers:octoFrameBuffers}, //front
 			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
 			//{trans:[0, 1, 0], buffers:teapotBuffers}, //back

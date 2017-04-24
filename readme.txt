@@ -32,15 +32,13 @@ cap player position outside sphere.
 2 worlds. option to toggle reflect and portal. 
 fly through portal. (position capped when portal off)
 draw player at "opposite" spot in other world
-use "discard" in frag shader to not parts inside ball
+use "discard" in frag shader to not draw parts inside ball
 
 todo:
 draw sphere without near clip? apparently not a standard gl option - should work around. https://www.opengl.org/archives/resources/faq/technical/clipping.htm
 
 COSMETIC
-skyboxes so can see form of ball (portal off) 
 ambient lighting - different for each world, leaks through portal (basically ball light). light world, dark world?
-3d models. include handedness so can see reflection. heaven/hell theme?
 
 "perfect sphere" shader
 
