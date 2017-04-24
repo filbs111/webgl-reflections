@@ -257,51 +257,54 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			mat4.translate(mvMatrix, thisItem.trans);
 			drawObjectFromBuffers(thisItem.buffers, activeProg);
 		}
-		//draw the player object.
-		mat4.set(playerCamera, mvMatrix)
 		
-		var invPlayerMat = mat4.create();
-		mat4.set(playerMatrix, invPlayerMat);
-		mat4.inverse(invPlayerMat);
-		
-		mat4.set(playerCamera, mvMatrix);
-		mat4.multiply(mvMatrix, invPlayerMat);
-		mat4.scale(mvMatrix,playerObjScaleVec);
-		
-		drawObjectFromBuffers(cubeFrameBuffers, activeProg);
-		
-		
-		//draw player object at "opposite" spot in the world (so will see through portal)	
-		var movedPlayerMatrix = mat4.create();
-		mat4.set(playerMatrix, movedPlayerMatrix);
-		
-		movedPlayerMatrix[12]=0;	//zero translation components
-		movedPlayerMatrix[13]=0;
-		movedPlayerMatrix[14]=0;
-		
-		var posMagSq=0;
-		for (var cc=0;cc<3;cc++){
-			posMagSq+=playerPosition[cc]*playerPosition[cc];
-		}
-		
-		var invertedPlayerPos = [];
-		for (var cc=0;cc<3;cc++){
-			invertedPlayerPos[cc]=-playerPosition[cc]/posMagSq;
-			//invertedPlayerPos[cc]=playerPosition[cc];
-		}
-		//invertedPlayerPos[2]+=1;
-		
-		mat4.rotate(movedPlayerMatrix, Math.PI, playerPosition);
-		mat4.translate(movedPlayerMatrix, invertedPlayerPos);
+		if (guiParams.drawPlayer){
+			//draw the player object.
+			mat4.set(playerCamera, mvMatrix)
+			
+			var invPlayerMat = mat4.create();
+			mat4.set(playerMatrix, invPlayerMat);
+			mat4.inverse(invPlayerMat);
+			
+			mat4.set(playerCamera, mvMatrix);
+			mat4.multiply(mvMatrix, invPlayerMat);
+			mat4.scale(mvMatrix,playerObjScaleVec);
+			
+			drawObjectFromBuffers(cubeFrameBuffers, activeProg);
+			
+			
+			//draw player object at "opposite" spot in the world (so will see through portal)	
+			var movedPlayerMatrix = mat4.create();
+			mat4.set(playerMatrix, movedPlayerMatrix);
+			
+			movedPlayerMatrix[12]=0;	//zero translation components
+			movedPlayerMatrix[13]=0;
+			movedPlayerMatrix[14]=0;
+			
+			var posMagSq=0;
+			for (var cc=0;cc<3;cc++){
+				posMagSq+=playerPosition[cc]*playerPosition[cc];
+			}
+			
+			var invertedPlayerPos = [];
+			for (var cc=0;cc<3;cc++){
+				invertedPlayerPos[cc]=-playerPosition[cc]/posMagSq;
+				//invertedPlayerPos[cc]=playerPosition[cc];
+			}
+			//invertedPlayerPos[2]+=1;
+			
+			mat4.rotate(movedPlayerMatrix, Math.PI, playerPosition);
+			mat4.translate(movedPlayerMatrix, invertedPlayerPos);
 
-		mat4.set(movedPlayerMatrix, invPlayerMat);
-		mat4.inverse(invPlayerMat);
-		
-		mat4.set(playerCamera, mvMatrix);
-		mat4.multiply(mvMatrix, invPlayerMat);
-		mat4.scale(mvMatrix,playerObjScaleVec);
-		
-		drawObjectFromBuffers(cubeFrameBuffers, activeProg);
+			mat4.set(movedPlayerMatrix, invPlayerMat);
+			mat4.inverse(invPlayerMat);
+			
+			mat4.set(playerCamera, mvMatrix);
+			mat4.multiply(mvMatrix, invPlayerMat);
+			mat4.scale(mvMatrix,playerObjScaleVec);
+			
+			drawObjectFromBuffers(cubeFrameBuffers, activeProg);
+		}
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
@@ -481,7 +484,8 @@ var guiParams={
 	mappingType: 'projection',
 	projectionPoint: 'offset',
 	portal: true,
-	drawSkybox: true
+	drawSkybox: true,
+	drawPlayer: false,
 };
 
 var mouseInfo = {
@@ -505,6 +509,7 @@ function init(){
 	gui.add(guiParams, 'projectionPoint', ['centre', 'offset']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'portal');
 	gui.add(guiParams, 'drawSkybox');
+	gui.add(guiParams, 'drawPlayer');
 
 	//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 	
@@ -642,6 +647,7 @@ var currentWorld = worldOne;
 var otherWorld = worldTwo;
 
 function switchWorld(){
+	console.log("switched world");
 	var tmp=currentWorld;
 	currentWorld = otherWorld;
 	otherWorld= tmp;
@@ -717,21 +723,18 @@ function movePlayerOutsideSphere(){
 	}
 	posMagSq/=1.005;	//(square of rad which to limit to ( drawn sphere rad =1 )
 	if (posMagSq<1){
-		var posMag = Math.sqrt(posMagSq);
-		for (var cc=0;cc<3;cc++){
-			playerPosition[cc]/=posMag;
-		}		
-		
 		if (portalActive){
-			//hack. should also rotate by 180
 			for (var cc=0;cc<3;cc++){
-				playerPosition[cc]*=-1;
+				playerPosition[cc]=-playerPosition[cc]/posMagSq;
 			}
 			mat4.rotate(playerMatrix, Math.PI, playerPosition);
 			switchWorld();
+		}else{
+			var posMag = Math.sqrt(posMagSq);
+			for (var cc=0;cc<3;cc++){
+				playerPosition[cc]/=posMag;
+			}	
 		}	
-		
-		
 		setPlayerTranslation(playerPosition);
 	}
 }
