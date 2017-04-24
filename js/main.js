@@ -285,18 +285,18 @@ function drawWorldScene(frameTime, drawReflector, world) {
 
 		mat4.identity(mvMatrix);
 		mat4.scale(mvMatrix,playerObjScaleVec);
-		mat4.translate(mvMatrix, [0,0,-2]);
+		mat4.translate(mvMatrix, [0,0,-4]);
 
 		drawObjectFromBuffers(sphereBuffers, activeProg);
-		/*
+		
 		gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture2);
 
 		mat4.identity(mvMatrix);
 		mat4.scale(mvMatrix,playerObjScaleVec);
-		mat4.translate(mvMatrix, [0,0,-2]);
+		mat4.translate(mvMatrix, [0,1,-4]);
 
 		drawObjectFromBuffers(sphereBuffers, activeProg);
-		*/
+		
 	
 		
 		//gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
@@ -404,9 +404,9 @@ function initCubemapFramebuffer(){
 var skyboxImages;
 function loadCubeMap(base)
 {
-	var skyboxTexture = gl.createTexture();
+	var texture  = gl.createTexture();
 	skyboxImages = [];
-	gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture);
+	gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture );
 	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	//gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
@@ -450,7 +450,7 @@ function loadCubeMap(base)
 		}(texture, face, image);
 		image.src = base + '/' + faces[i][0];
 	}
-	return skyboxTexture;
+	return texture;
 }
 
 function switchCubemapImages(storedImages){
@@ -496,7 +496,7 @@ function initTexture() {
 	texture.image.src = "img/0033.jpg";
 	
 	skyboxTexture1 = loadCubeMap("img/skyboxes/gg");
-	//skyboxTexture2 = loadCubeMap("img/skyboxes/cloudy11");	//loading this results in oddly using this texture though trying to use skyboxTexture1
+	skyboxTexture2 = loadCubeMap("img/skyboxes/cloudy11");	//loading this results in oddly using this texture though trying to use skyboxTexture1
 }
 
 
