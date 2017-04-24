@@ -41,7 +41,7 @@ function initShaders(){
 	
 	shaderProgramSimpleCubemap = loadShader( "shader-simplecubemap-vs", "shader-simplecubemap-fs",{
 		attributes:["aVertexPosition"],
-		uniforms:["uPMatrix","uMVMatrix",]
+		uniforms:["uPMatrix","uMVMatrix","uColor"]
 	});
 }
 
@@ -109,7 +109,7 @@ function drawScene(frameTime){
 	stats.begin();
 	
 	
-	portalActive = (guiParams.portal=="on");
+	portalActive = (guiParams.portal);
 	
 	//render cubemap views
 	switch (guiParams.projectionPoint){
@@ -176,21 +176,24 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		//use cubemap for centre object
 		var activeProg;
 
-		//draw an object using cubemap
-		activeProg = shaderProgramSimpleCubemap;
-		gl.useProgram(activeProg);
+		if (guiParams.drawSkybox){
+			//draw an object using cubemap
+			activeProg = shaderProgramSimpleCubemap;
+			gl.useProgram(activeProg);
+			gl.uniform4fv(activeProg.uniforms.uColor, world.bgColor);
+			
+			gl.bindTexture(gl.TEXTURE_CUBE_MAP, world.skybox);
 
-		gl.bindTexture(gl.TEXTURE_CUBE_MAP, world.skybox);
+			mat4.set(playerCamera, mvMatrix);	//TODO position cubemap at player position
+			mat4.scale(mvMatrix, [50,50,50]);
+			
+			gl.disable(gl.CULL_FACE);
+			gl.disable(gl.DEPTH_TEST);
+			gl.disable(gl.DEPTH_WRITE);
 
-		mat4.set(playerCamera, mvMatrix);	//TODO position cubemap at player position
-		mat4.scale(mvMatrix, [50,50,50]);
+			drawObjectFromBuffers(sphereBuffers, activeProg);	//TODO use cube object
+		}
 		
-		gl.disable(gl.CULL_FACE);
-		gl.disable(gl.DEPTH_TEST);
-		gl.disable(gl.DEPTH_WRITE);
-
-		drawObjectFromBuffers(sphereBuffers, activeProg);	//TODO use cube object
-	
 		gl.enable(gl.CULL_FACE);
 		gl.enable(gl.DEPTH_TEST);
 		gl.enable(gl.DEPTH_WRITE);
@@ -467,7 +470,7 @@ function initTexture() {
 	texture.image.src = "img/0033.jpg";
 	
 	worldOne.skybox = loadCubeMap("img/skyboxes/gg");
-	worldTwo.skybox = loadCubeMap("img/skyboxes/cloudy11a");	//loading this results in oddly using this texture though trying to use skyboxTexture1
+	worldTwo.skybox = loadCubeMap("img/skyboxes/cloudy11a");
 }
 
 
@@ -475,7 +478,8 @@ var guiParams={
 	shape: 'sphere',
 	mappingType: 'projection',
 	projectionPoint: 'offset',
-	portal: 'on'
+	portal: true,
+	drawSkybox: true
 };
 
 var mouseInfo = {
@@ -497,7 +501,9 @@ function init(){
 	gui.add(guiParams, 'shape', ['sphere', 'teapot', 'octoframe']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'mappingType', ['projection', 'distant reflection']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'projectionPoint', ['centre', 'offset']).onChange(function(v){console.log("changed " + v);});
-	gui.add(guiParams, 'portal', ['on', 'off']).onChange(function(v){console.log("changed " + v);});
+	gui.add(guiParams, 'portal');
+	gui.add(guiParams, 'drawSkybox');
+
 	//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 	
 	window.addEventListener("keydown",function(evt){

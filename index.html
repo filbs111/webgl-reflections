@@ -199,9 +199,10 @@
 	precision mediump float;
 	uniform samplerCube uSampler;
 	varying vec3 vPos;
+	uniform vec4 uColor;
 
 	void main(void) {
-		gl_FragColor = textureCube(uSampler, vPos);
+		gl_FragColor = uColor*textureCube(uSampler, vPos);
 	}
 </script>
 <!-- vertex shader -->
