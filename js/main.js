@@ -317,10 +317,12 @@ var cubemapFramebuffer;
 var cubemapTexture;
 var cubemapSize = 1024;
 //cube map code from http://www.humus.name/cubemapviewer.js (slightly modified)
+var fbufferImages;
 function initCubemapFramebuffer()
 {
 	cubemapFramebuffer = [];
-
+	fbufferImages=[];
+	
 	cubemapTexture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
 	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -348,6 +350,7 @@ function initCubemapFramebuffer()
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		//gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 		gl.texImage2D(face, 0, gl.RGBA, cubemapSize, cubemapSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		fbufferImages[face]=null;
 		
 		var renderbuffer = gl.createRenderbuffer();
 		gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
@@ -361,15 +364,79 @@ function initCubemapFramebuffer()
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
+//cube map code from http://www.humus.name/cubemapviewer.js (relatively unmodified)
+//TODO generalise code and share with above
+var skyboxImages;
+function loadCubeMap(base)
+{
+	var skyboxTexture = gl.createTexture();
+	skyboxImages = [];
+	gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	//gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+	var faces = [/*["posx.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
+				 ["negx.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
+				 ["posy.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
+				 ["negy.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
+				 ["posz.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
+				 ["negz.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];*/
+				 ["ft.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
+				 ["bk.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
+				 ["up.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
+				 ["dn.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
+				 ["rt.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
+				 ["lf.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
+	for (var i = 0; i < faces.length; i++)
+	{
+		var face = faces[i][1];
+		var image = new Image();
+		image.onload = function (texture, face, image) {
+			return function () {
+				console.log("texture : " + texture);
+				gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+				gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+				gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+				
+				//store so can later switch ????
+				skyboxImages[face]=image;
+								
+				//image_counter++;
+				//if (image_counter == 6)
+				//{
+				//	gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+				//}		//no need for mipmap because skybox is usually magnified
+						//since 256x256, fov~90, screens <256 pix high uncommon
+				//requestAnimationFrame(draw);
+			}
+		}(texture, face, image);
+		image.src = base + '/' + faces[i][0];
+	}
+	return skyboxTexture;
+}
+
+function switchCubemapImages(storedImages){
+	//seems a bizarre way to do things. possibly there's a sensible way.
+	//this seems to work for switching between cubemap textures, but doesn't work for switching to dynamic cubemap
+	for (var ii in storedImages){
+		gl.texImage2D(ii, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, storedImages[ii]);
+	}
+}
+
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	mat4.identity(playerMatrix);
-	movePlayerFwd(-1.5);
-	movePlayerLeft(0.5);
+	//movePlayerFwd(-1.5);
+	//movePlayerLeft(0.6);
+	movePlayer([0.3,-0.2,-1.5]);
 }
 
 
 var texture;
+var skyboxTexture;
 function initTexture() {
 	texture = gl.createTexture();
 	texture.image = new Image();
@@ -384,6 +451,8 @@ function initTexture() {
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 	texture.image.src = "img/0033.jpg";
+	
+	skyboxTexture = loadCubeMap("img/skyboxes/gg");
 }
 
 
@@ -584,7 +653,6 @@ function movePlayer(vec){	//[left,up,forward]
 	playerPosition[1] += vec[0]*playerMatrix[4] + vec[1]*playerMatrix[5] + vec[2]*playerMatrix[6];
 	playerPosition[2] += vec[0]*playerMatrix[8] + vec[1]*playerMatrix[9] + vec[2]*playerMatrix[10];
 	setPlayerTranslation(playerPosition);
-	constrainPlayerPositionToBox();
 }
 function turnPlayer(amount){
 	setPlayerTranslation([0,0,0]);
