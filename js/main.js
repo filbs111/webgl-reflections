@@ -1,5 +1,6 @@
 var shaderProgramColored;
 var shaderProgramPosColor;
+var shaderProgramSimpleCubemap;
 var reflProgs={};
 var portalProgs={};
 var portalActive=false;
@@ -36,6 +37,11 @@ function initShaders(){
 	portalProgs.distant = loadShader( "shader-reflect-vs", "shader-cubemapportal-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uEyePos"]
+	});
+	
+	shaderProgramSimpleCubemap = loadShader( "shader-simplecubemap-vs", "shader-simplecubemap-fs",{
+		attributes:["aVertexPosition"],
+		uniforms:["uPMatrix","uMVMatrix",]
 	});
 }
 
@@ -270,6 +276,33 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		
 		drawObjectFromBuffers(cubeFrameBuffers, activeProg);
 		
+		
+		//draw an object using cubemap
+		activeProg = shaderProgramSimpleCubemap;
+		gl.useProgram(activeProg);
+		//if (typeof skyboxImages !== 'undefined'){switchCubemapImages(skyboxImages);}
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture1);	//if don't have this here, skyboxTexture1 gets used for dynamic cubemap too? WHAT THE FUCK
+
+		mat4.identity(mvMatrix);
+		mat4.scale(mvMatrix,playerObjScaleVec);
+		mat4.translate(mvMatrix, [0,0,-2]);
+
+		drawObjectFromBuffers(sphereBuffers, activeProg);
+		/*
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture2);
+
+		mat4.identity(mvMatrix);
+		mat4.scale(mvMatrix,playerObjScaleVec);
+		mat4.translate(mvMatrix, [0,0,-2]);
+
+		drawObjectFromBuffers(sphereBuffers, activeProg);
+		*/
+	
+		
+		//gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+
+		//setupDynamicCubemap();
+
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
@@ -280,11 +313,12 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
 	gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexPositionBuffer);
     gl.vertexAttribPointer(shaderProg.attributes.aVertexPosition, bufferObj.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 	
-	if (bufferObj.vertexNormalBuffer){
-		gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexNormalBuffer);
-		gl.vertexAttribPointer(shaderProg.attributes.aVertexNormal, bufferObj.vertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+	if (shaderProg.attributes.aVertexNormal){
+		if (bufferObj.vertexNormalBuffer){
+			gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexNormalBuffer);
+			gl.vertexAttribPointer(shaderProg.attributes.aVertexNormal, bufferObj.vertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		}
 	}
-	
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferObj.vertexIndexBuffer);
 	
 	if (bufferObj.vertexTextureCoordBuffer){
@@ -317,11 +351,10 @@ var cubemapFramebuffer;
 var cubemapTexture;
 var cubemapSize = 1024;
 //cube map code from http://www.humus.name/cubemapviewer.js (slightly modified)
-var fbufferImages;
-function initCubemapFramebuffer()
-{
+var cubemapFacelist;
+
+function initCubemapFramebuffer(){
 	cubemapFramebuffer = [];
-	fbufferImages=[];
 	
 	cubemapTexture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
@@ -336,6 +369,8 @@ function initCubemapFramebuffer()
 				 gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
 				 gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
 				 gl.TEXTURE_CUBE_MAP_NEGATIVE_Z];
+	cubemapFacelist = faces;
+	
 	for (var i = 0; i < faces.length; i++)
 	{
 		var face = faces[i];
@@ -350,7 +385,7 @@ function initCubemapFramebuffer()
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		//gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 		gl.texImage2D(face, 0, gl.RGBA, cubemapSize, cubemapSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-		fbufferImages[face]=null;
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
 		
 		var renderbuffer = gl.createRenderbuffer();
 		gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
@@ -425,6 +460,12 @@ function switchCubemapImages(storedImages){
 		gl.texImage2D(ii, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, storedImages[ii]);
 	}
 }
+function setupDynamicCubemap(){
+	for (var ii in cubemapFacelist){
+		var face=cubemapFacelist[ii];
+		gl.texImage2D(face, 0, gl.RGBA, cubemapSize, cubemapSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+	}
+}
 
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -436,7 +477,9 @@ function setupScene() {
 
 
 var texture;
-var skyboxTexture;
+var skyboxTexture1;
+var skyboxTexture2;
+
 function initTexture() {
 	texture = gl.createTexture();
 	texture.image = new Image();
@@ -452,7 +495,8 @@ function initTexture() {
 	}
 	texture.image.src = "img/0033.jpg";
 	
-	skyboxTexture = loadCubeMap("img/skyboxes/gg");
+	skyboxTexture1 = loadCubeMap("img/skyboxes/gg");
+	//skyboxTexture2 = loadCubeMap("img/skyboxes/cloudy11");	//loading this results in oddly using this texture though trying to use skyboxTexture1
 }
 
 
