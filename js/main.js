@@ -58,7 +58,7 @@ function initBuffers(){
 	var octoFrameBlenderObject = loadBlenderExport(octoFrameData.meshes[0]);
 	var teapotObject = loadBlenderExport(teapotData);	//isn't actually a blender export - just a obj json
 
-	loadBufferData(sphereBuffers, makeSphereData(99,200,1));
+	loadBufferData(sphereBuffers, makeSphereData(149,300,1));
 	loadBufferData(sphereLowResBuffers, makeSphereData(19,40,1));
 	loadBufferData(cubeBuffers, levelCubeData);
 	loadBufferData(cubeFrameBuffers, cubeFrameBlenderObject);
@@ -136,7 +136,7 @@ function drawScene(frameTime){
 	
 	for (var ii=0;ii<6;ii++){
 	//for (var ii=0;ii<1;ii++){
-		mat4.perspective( 90.0, 1.0, 0.001, 100, pMatrix);	
+		mat4.perspective( 90.0, 1.0, 0.0005, 100, pMatrix);	
 		var framebuffer = cubemapFramebuffer[ii];
 		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 		gl.viewport(0, 0, framebuffer.width, framebuffer.height);
@@ -154,7 +154,7 @@ function drawScene(frameTime){
 	}
 	
 	
-	mat4.perspective(90, gl.viewportWidth/ gl.viewportHeight, 0.001, 100, pMatrix);
+	mat4.perspective(90, gl.viewportWidth/ gl.viewportHeight, 0.0005, 100, pMatrix);
 	
 	//setup for drawing to screen
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -721,7 +721,7 @@ function movePlayerOutsideSphere(){
 	for (var cc=0;cc<3;cc++){
 		posMagSq+=playerPosition[cc]*playerPosition[cc];
 	}
-	posMagSq/=1.005;	//(square of rad which to limit to ( drawn sphere rad =1 )
+	posMagSq/=1.0025;	//(square of rad which to limit to ( drawn sphere rad =1 )
 	if (posMagSq<1){
 		if (portalActive){
 			for (var cc=0;cc<3;cc++){
