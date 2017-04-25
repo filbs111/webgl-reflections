@@ -218,19 +218,20 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		if (drawReflector){
 			switch (guiParams.mappingType){
 				case "projection":
-					//activeProg = shaderSet.projection;
-					activeProg = shaderSet.vertprojection;
-					
+					activeProg = shaderSet.projection;					
 					gl.useProgram(activeProg);
 					gl.uniform3fv(activeProg.uniforms.uCentrePos, offsetPointUnsigned);
-					//gl.uniform3fv(activeProg.uniforms.uCentrePos, [Math.random(),Math.random(),Math.random()]);
-
-				break;
+					break;
+				case "vertex projection":
+					activeProg = shaderSet.vertprojection;					
+					gl.useProgram(activeProg);
+					gl.uniform3fv(activeProg.uniforms.uCentrePos, offsetPointUnsigned);
+					break;
 				case "distant reflection":
 					activeProg = shaderSet.distant;
 					gl.useProgram(activeProg);
 					gl.uniform3fv(activeProg.uniforms.uEyePos, storedPlayerPos);
-				break;
+					break;
 			}
 				
 			gl.activeTexture(gl.TEXTURE0);
@@ -485,13 +486,13 @@ function initTexture() {
 	texture.image.src = "img/0033.jpg";
 	
 	worldOne.skybox = loadCubeMap("img/skyboxes/gg");
-	worldTwo.skybox = loadCubeMap("img/skyboxes/cloudy11a");
+	worldTwo.skybox = loadCubeMap("img/skyboxes/gg");
 }
 
 
 var guiParams={
 	shape: 'sphere',
-	mappingType: 'projection',
+	mappingType: 'vertex projection',
 	projectionPoint: 'offset',
 	portal: true,
 	drawSkybox: true,
@@ -515,7 +516,7 @@ function init(){
 
 	var gui = new dat.GUI();
 	gui.add(guiParams, 'shape', ['sphere', 'teapot', 'octoframe']).onChange(function(v){console.log("changed " + v);});
-	gui.add(guiParams, 'mappingType', ['projection', 'distant reflection']).onChange(function(v){console.log("changed " + v);});
+	gui.add(guiParams, 'mappingType', ['projection', 'vertex projection', 'distant reflection']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'projectionPoint', ['centre', 'offset']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'portal');
 	gui.add(guiParams, 'drawSkybox');
@@ -641,7 +642,7 @@ var worldOne = {
 			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
 			//{trans:[0, 1, 0], buffers:teapotBuffers}, //back
 			],
-	bgColor: [0.9, 0.4, 0.1, 1.0]
+	bgColor: [1.1, 1.1, 1.1, 1.0]
 };
 var worldTwo = {
 	items: [{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
@@ -651,7 +652,7 @@ var worldTwo = {
 			{trans:[0, 2, 2], buffers:cubeFrameBuffers}, //front
 			{trans:[0, 0, -4], buffers:cubeFrameBuffers}, //back
 			],
-	bgColor: [0.0, 0.4, 0.6, 1.0]
+	bgColor: [0.6, 0.0, 0.0, 1.0]
 };
 var currentWorld = worldOne;
 var otherWorld = worldTwo;

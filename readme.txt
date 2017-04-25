@@ -40,7 +40,9 @@ draw sphere without near clip? apparently not a standard gl option - should work
 COSMETIC
 ambient lighting - different for each world, leaks through portal (basically ball light). light world, dark world?
 
-"perfect sphere" shader
+MECHANICS
+when near portal surface (eg near half in/out of portal), have tendency to orbit portal (when try to move along surface of ball, pointing direction should turn)
+smooth movement with momentum
 
 CLIPPING
 improve drawing of object crossing the ball, so parts seen in camera world match up with parts drawn in other world. vert shader to distort verts inside sphere?
