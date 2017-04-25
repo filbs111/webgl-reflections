@@ -29,6 +29,10 @@ function initShaders(){
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uEyePos"]
 	});
+	reflProgs.vertprojection = loadShader( "shader-reflect-vertproj-vs", "shader-cubemapportal-vertproj-fs",{
+		attributes:["aVertexPosition", "aVertexNormal"],
+		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
+	});
 	
 	portalProgs.projection = loadShader( "shader-cubemap-vs", "shader-cubemapportal-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
@@ -38,6 +42,10 @@ function initShaders(){
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uEyePos"]
 	});
+	portalProgs.vertprojection = loadShader( "shader-cubemap-vertproj-vs", "shader-cubemapportal-vertproj-fs",{
+		attributes:["aVertexPosition", "aVertexNormal"],
+		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
+	});
 	
 	shaderProgramSimpleCubemap = loadShader( "shader-simplecubemap-vs", "shader-simplecubemap-fs",{
 		attributes:["aVertexPosition"],
@@ -45,8 +53,8 @@ function initShaders(){
 	});
 }
 
+var ballBuffers={};
 var sphereBuffers={};
-var sphereLowResBuffers={};
 var cubeBuffers={};
 var cubeFrameBuffers={};
 var octoFrameBuffers={};
@@ -58,8 +66,8 @@ function initBuffers(){
 	var octoFrameBlenderObject = loadBlenderExport(octoFrameData.meshes[0]);
 	var teapotObject = loadBlenderExport(teapotData);	//isn't actually a blender export - just a obj json
 
-	loadBufferData(sphereBuffers, makeSphereData(149,300,1));
-	loadBufferData(sphereLowResBuffers, makeSphereData(19,40,1));
+	loadBufferData(ballBuffers, makeSphereData(99,200,1));	//todo use subdivided normalized box instead of sphere 
+	loadBufferData(sphereBuffers, makeSphereData(19,40,1));
 	loadBufferData(cubeBuffers, levelCubeData);
 	loadBufferData(cubeFrameBuffers, cubeFrameBlenderObject);
 	loadBufferData(octoFrameBuffers, octoFrameBlenderObject);
@@ -136,7 +144,7 @@ function drawScene(frameTime){
 	
 	for (var ii=0;ii<6;ii++){
 	//for (var ii=0;ii<1;ii++){
-		mat4.perspective( 90.0, 1.0, 0.0005, 100, pMatrix);	
+		mat4.perspective( 90.0, 1.0, 0.00025, 100, pMatrix);	
 		var framebuffer = cubemapFramebuffer[ii];
 		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 		gl.viewport(0, 0, framebuffer.width, framebuffer.height);
@@ -154,7 +162,7 @@ function drawScene(frameTime){
 	}
 	
 	
-	mat4.perspective(90, gl.viewportWidth/ gl.viewportHeight, 0.0005, 100, pMatrix);
+	mat4.perspective(90, gl.viewportWidth/ gl.viewportHeight, 0.00025, 100, pMatrix);
 	
 	//setup for drawing to screen
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -193,7 +201,7 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			gl.disable(gl.DEPTH_TEST);
 			gl.disable(gl.DEPTH_WRITE);
 
-			drawObjectFromBuffers(sphereLowResBuffers, activeProg);	//TODO use cube object
+			drawObjectFromBuffers(sphereBuffers, activeProg);	//TODO use cube object
 		}
 		
 		gl.enable(gl.CULL_FACE);
@@ -210,7 +218,9 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		if (drawReflector){
 			switch (guiParams.mappingType){
 				case "projection":
-					activeProg = shaderSet.projection;
+					//activeProg = shaderSet.projection;
+					activeProg = shaderSet.vertprojection;
+					
 					gl.useProgram(activeProg);
 					gl.uniform3fv(activeProg.uniforms.uCentrePos, offsetPointUnsigned);
 					//gl.uniform3fv(activeProg.uniforms.uCentrePos, [Math.random(),Math.random(),Math.random()]);
@@ -229,7 +239,7 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			
 			switch (guiParams.shape){
 				case "sphere":
-					drawObjectFromBuffers(sphereBuffers, activeProg);
+					drawObjectFromBuffers(ballBuffers, activeProg);
 				break;
 				case "teapot":
 					drawObjectFromBuffers(teapotBuffers, activeProg);
@@ -626,7 +636,7 @@ var worldOne = {
 	items: [{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
 			{trans:[-4, 0, 0], buffers:octoFrameBuffers}, //left
 			{trans:[2, 2, 0], buffers:octoFrameBuffers}, //top
-			{trans:[0, -4, 0], buffers:sphereLowResBuffers}, //bottom
+			{trans:[0, -4, 0], buffers:sphereBuffers}, //bottom
 			{trans:[0, 2, 2], buffers:octoFrameBuffers}, //front
 			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
 			//{trans:[0, 1, 0], buffers:teapotBuffers}, //back
@@ -721,7 +731,7 @@ function movePlayerOutsideSphere(){
 	for (var cc=0;cc<3;cc++){
 		posMagSq+=playerPosition[cc]*playerPosition[cc];
 	}
-	posMagSq/=1.0025;	//(square of rad which to limit to ( drawn sphere rad =1 )
+	posMagSq/=1.00125;	//(square of rad which to limit to ( drawn sphere rad =1 )
 	if (posMagSq<1){
 		if (portalActive){
 			for (var cc=0;cc<3;cc++){

@@ -194,6 +194,61 @@
 </script>
 
 
+
+
+<!-- cube mapping simple projection-->
+<script id="shader-cubemapportal-vertproj-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	
+	varying vec3 vPos;
+	uniform samplerCube uSampler;
+	
+	void main(void) {
+		gl_FragColor = textureCube(uSampler, -vPos);
+	}
+</script>
+<!-- vertex shader -->
+<script id="shader-cubemap-vertproj-vs" type="x-shader/x-vertex">
+	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+	varying vec3 vPos;
+	uniform vec3 uCentrePos;
+
+	void main(void) {
+		float csq = dot(uCentrePos,uCentrePos);
+		float cdotp = dot(uCentrePos, -aVertexPosition);
+		float a = pow((1.0-csq)+cdotp*cdotp, 0.5) - cdotp;
+		vec3 scaledVertexPosition = aVertexPosition*a;
+	
+		gl_Position = uPMatrix * uMVMatrix * vec4( scaledVertexPosition - uCentrePos, 1.0);
+		vPos = vec3(scaledVertexPosition.x, -scaledVertexPosition.y, -scaledVertexPosition.z );
+	}
+</script>
+<!-- vertex shader -->
+<script id="shader-reflect-vertproj-vs" type="x-shader/x-vertex">
+	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+	varying vec3 vPos;
+	uniform vec3 uCentrePos;
+
+	void main(void) {
+		float csq = dot(-uCentrePos,-uCentrePos);
+		float cdotp = dot(-uCentrePos, aVertexPosition);
+		float a = pow((1.0-csq)+cdotp*cdotp, 0.5) - cdotp;
+		vec3 scaledVertexPosition = aVertexPosition*a;
+	
+		gl_Position = uPMatrix * uMVMatrix * vec4( scaledVertexPosition - uCentrePos, 1.0);
+		vPos = -vec3(scaledVertexPosition.x, -scaledVertexPosition.y, -scaledVertexPosition.z );	//only difference from portal v shader is sign here
+	}
+</script>
+
+
+
+
 <!-- simple cubemap pix shader -->
 <script id="shader-simplecubemap-fs" type="x-shader/x-fragment">
 	precision mediump float;
