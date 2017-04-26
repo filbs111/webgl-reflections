@@ -669,28 +669,36 @@ function setGlClearColor(color){
 }
 
 function movePlayerFwd(amount){	
-	playerPosition[0] += amount*playerMatrix[2];
-	playerPosition[1] += amount*playerMatrix[6];
-	playerPosition[2] += amount*playerMatrix[10];
-	setPlayerTranslation(playerPosition);
+	movePlayer([0,0,amount]);
 }
 function movePlayerUp(amount){	
-	playerPosition[0] += amount*playerMatrix[1];
-	playerPosition[1] += amount*playerMatrix[5];
-	playerPosition[2] += amount*playerMatrix[9];
-	setPlayerTranslation(playerPosition);
+	movePlayer([0,amount,0]);
 }
 function movePlayerLeft(amount){	
-	playerPosition[0] += amount*playerMatrix[0];
-	playerPosition[1] += amount*playerMatrix[4];
-	playerPosition[2] += amount*playerMatrix[8];
-	setPlayerTranslation(playerPosition);
+	movePlayer([amount,0,0]);
 }
 function movePlayer(vec){	//[left,up,forward]
 	playerPosition[0] += vec[0]*playerMatrix[0] + vec[1]*playerMatrix[1] + vec[2]*playerMatrix[2];
 	playerPosition[1] += vec[0]*playerMatrix[4] + vec[1]*playerMatrix[5] + vec[2]*playerMatrix[6];
 	playerPosition[2] += vec[0]*playerMatrix[8] + vec[1]*playerMatrix[9] + vec[2]*playerMatrix[10];
 	setPlayerTranslation(playerPosition);
+	
+	//when "dipping toe in" portal, want to nearly "follow" it. rotate by something like cross(player position (relative to portal) , movement) * falloff function
+	var portalPos=[playerMatrix[12],playerMatrix[13],playerMatrix[14]];		//get portal position in frame of player
+	var crossp=[];
+	crossp[0] = -portalPos[1]*vec[2] +portalPos[2]*vec[1];
+	crossp[1] = -portalPos[2]*vec[0] +portalPos[0]*vec[2];
+	crossp[2] = -portalPos[0]*vec[1] +portalPos[1]*vec[0];
+
+	var radsq=0;
+	for (var cc=0;cc<3;cc++){
+		radsq+=portalPos[cc]*portalPos[cc];
+	}
+	var falloff = 1.0/(radsq*radsq*radsq);
+	for (var cc=0;cc<3;cc++){
+		crossp[cc]*=falloff;
+	}
+	rotatePlayer(crossp);
 }
 function turnPlayer(amount){
 	setPlayerTranslation([0,0,0]);

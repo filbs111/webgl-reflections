@@ -33,6 +33,7 @@ cap player position outside sphere.
 fly through portal. (position capped when portal off)
 draw player at "opposite" spot in other world
 use "discard" in frag shader to not draw parts inside ball
+when near portal surface (eg near half in/out of portal), have tendency to orbit portal (when try to move along surface of ball, pointing direction should turn)
 
 todo:
 draw sphere without near clip? apparently not a standard gl option - should work around. https://www.opengl.org/archives/resources/faq/technical/clipping.htm
@@ -41,13 +42,12 @@ COSMETIC
 ambient lighting - different for each world, leaks through portal (basically ball light). light world, dark world?
 
 MECHANICS
-when near portal surface (eg near half in/out of portal), have tendency to orbit portal (when try to move along surface of ball, pointing direction should turn)
 smooth movement with momentum
+ability to shoot bullets and see them go through portal
 
 CLIPPING
 improve drawing of object crossing the ball, so parts seen in camera world match up with parts drawn in other world. vert shader to distort verts inside sphere?
 drawing object crossing portal only once? (non-cubemap)
-ability to shoot bullets and see them go through portal
 
 CUBEMAP IMPROVEMENTS
 aligning to point at player
