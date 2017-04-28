@@ -112,6 +112,7 @@ function initBuffers(){
 function drawScene(frameTime){
 	resizecanvas();
 
+	if (guiParams.smoothMovement){iterateMechanics();}	//TODO make movement speed independent of framerate
 	movePlayerOutsideSphere();
 	
 	requestAnimationFrame(drawScene);
@@ -497,6 +498,7 @@ var guiParams={
 	portal: true,
 	drawSkybox: true,
 	drawPlayer: false,
+	smoothMovement: true
 };
 
 var mouseInfo = {
@@ -521,13 +523,14 @@ function init(){
 	gui.add(guiParams, 'portal');
 	gui.add(guiParams, 'drawSkybox');
 	gui.add(guiParams, 'drawPlayer');
+	gui.add(guiParams, 'smoothMovement');
 
 	//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
-		var controlSpeed=0.01;
+		var controlSpeed = guiParams.smoothMovement ? 0:0.02;
 		switch (evt.keyCode){
 			case 87:				//W
 				movePlayerFwd(controlSpeed);
@@ -542,16 +545,16 @@ function init(){
 				movePlayerLeft(-controlSpeed);
 				break;
 			case 39:
-				turnPlayer(0.02);
+				turnPlayer(controlSpeed);
 				break;
 			case 37:
-				turnPlayer(-0.02);
+				turnPlayer(-controlSpeed);
 				break;
 			case 81:				//Q
-				rollPlayer(-0.02);	
+				rollPlayer(-controlSpeed);	
 				break;
 			case 69:				//E
-				rollPlayer(0.02);	
+				rollPlayer(controlSpeed);	
 				break;
 			case 32:				//spacebar
 				movePlayerUp(-controlSpeed);
@@ -563,10 +566,10 @@ function init(){
 				willPreventDefault=false;
 				break;
 			case 38:
-				pitchPlayer(-0.02);		//up arrow
+				pitchPlayer(-controlSpeed);		//up arrow
 				break;
 			case 40:
-				pitchPlayer(0.02);
+				pitchPlayer(controlSpeed);
 				break;
 				
 			case 84:	//T = teleport to other world.
@@ -629,7 +632,30 @@ function init(){
 	requestAnimationFrame(drawScene);
 }
 
+var iterateMechanics = (function iterateMechanics(){
+	var lastTime=(new Date()).getTime();
+	var moveSpeed=0.01;
+	var rotateSpeed=0.01;
 
+	return function(){
+		var nowTime = (new Date()).getTime();
+		var timeElapsed = Math.min(nowTime - lastTime, 50);	//ms. 50ms -> slowdown if drop below 20fps 
+		//console.log("time elapsed: " + timeElapsed);
+		lastTime=nowTime;
+		
+		movePlayer([
+			moveSpeed*(keyThing.keystate(65)-keyThing.keystate(68)),	//lateral
+			moveSpeed*(keyThing.keystate(17)-keyThing.keystate(32)),	//vertical
+			moveSpeed*(keyThing.keystate(87)-keyThing.keystate(83)),	//fwd/back
+		]);
+		
+		rotatePlayer([
+			rotateSpeed*(keyThing.keystate(40)-keyThing.keystate(38)), //pitch
+			rotateSpeed*(keyThing.keystate(39)-keyThing.keystate(37)), //turn
+			rotateSpeed*(keyThing.keystate(69)-keyThing.keystate(81)), //roll
+		])
+	}
+})();
 
 
 var playerPosition = [0,0,0];
