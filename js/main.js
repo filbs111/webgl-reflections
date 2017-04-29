@@ -272,19 +272,10 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		
 		if (guiParams.drawPlayer){
 			//draw the player object.
-			mat4.set(playerCamera, mvMatrix)
 			
-			var invPlayerMat = mat4.create();
-			mat4.set(playerMatrix, invPlayerMat);
-			mat4.inverse(invPlayerMat);
+			drawObjectFromBuffersForScaleAndWorld(cubeFrameBuffers, activeProg, {mat:playerMatrix, world:currentWorld}, playerObjScaleVec, world);
 			
-			mat4.set(playerCamera, mvMatrix);
-			mat4.multiply(mvMatrix, invPlayerMat);
-			mat4.scale(mvMatrix,playerObjScaleVec);
-			
-			drawObjectFromBuffers(cubeFrameBuffers, activeProg);
-			
-			
+			/*
 			//draw player object at "opposite" spot in the world (so will see through portal)	
 			var movedPlayerMatrix = mat4.create();
 			mat4.set(playerMatrix, movedPlayerMatrix);
@@ -316,7 +307,16 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			mat4.scale(mvMatrix,playerObjScaleVec);
 			
 			drawObjectFromBuffers(cubeFrameBuffers, activeProg);
+			*/
 		}
+		
+		
+		
+		for (var bb in bullets){
+			drawObjectFromBuffersForScaleAndWorld(cubeFrameBuffers, activeProg, bullets[bb], [0.01,0.01,0.04], world);
+		}
+		
+		
 }
 function drawObjectFromBuffers(bufferObj, shaderProg){
 	prepBuffersForDrawing(bufferObj, shaderProg);
@@ -348,6 +348,46 @@ function drawObjectFromPreppedBuffers(bufferObj, shaderProg){
 	gl.uniformMatrix4fv(shaderProg.uniforms.uMVMatrix, false, mvMatrix);
 	gl.drawElements(gl.TRIANGLES, bufferObj.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 }
+function drawObjectFromBuffersForScaleAndWorld(bufferObj, activeProg, obj, scale, camworld){
+	var invMat = mat4.create();
+	
+	if (camworld == obj.world){
+		mat4.set(obj.mat, invMat);			
+	} else {
+		//console.log("drawing in other world");
+		//draw object at "opposite" spot in the world (so will see through portal)	
+		
+		var movedMatrix = mat4.create();
+		mat4.set(obj.mat, movedMatrix);
+			
+		movedMatrix[12]=0;	//zero translation components
+		movedMatrix[13]=0;
+		movedMatrix[14]=0;
+			
+		var posMagSq=0;
+		var posn = getTranslationFromMat(obj.mat);
+		for (var cc=0;cc<3;cc++){
+			posMagSq+=posn[cc]*posn[cc];
+		}
+			
+		var invertedPos = [];
+		for (var cc=0;cc<3;cc++){
+			invertedPos[cc]=-posn[cc]/posMagSq;
+		}
+			
+		mat4.rotate(movedMatrix, Math.PI, posn);
+		mat4.translate(movedMatrix, invertedPos);
+
+		mat4.set(movedMatrix, invMat);
+	}
+	
+	mat4.inverse(invMat);
+	mat4.set(playerCamera, mvMatrix);
+	mat4.multiply(mvMatrix, invMat);
+	mat4.scale(mvMatrix,scale);	
+	drawObjectFromBuffers(bufferObj, activeProg);
+}
+
 
 
 var mvMatrix = mat4.create();
@@ -575,6 +615,10 @@ function init(){
 			case 84:	//T = teleport to other world.
 				switchWorld();
 				break;
+				
+			case 71:	//G = fire gun
+				new Bullet(playerMatrix, currentWorld);
+				break;
 		}
 		if (willPreventDefault){evt.preventDefault()};
 	});
@@ -653,7 +697,11 @@ var iterateMechanics = (function iterateMechanics(){
 			rotateSpeed*(keyThing.keystate(40)-keyThing.keystate(38)), //pitch
 			rotateSpeed*(keyThing.keystate(39)-keyThing.keystate(37)), //turn
 			rotateSpeed*(keyThing.keystate(69)-keyThing.keystate(81)), //roll
-		])
+		]);
+		
+		for (var bb in bullets){
+			bullets[bb].iterate();
+		}
 	}
 })();
 
@@ -783,7 +831,6 @@ function movePlayerOutsideSphere(){
 		setPlayerTranslation(playerPosition);
 	}
 }
-
 var storedPlayerPos;
 var offsetPointZero=[0,0,0];
 var offsetPointStored=[0,0,0];	//will update
@@ -809,6 +856,21 @@ function setPlayerTranslation(posArray){
 	}	
 	
 	mat4.translate(playerMatrix, posArray);
+}
+function getTranslationFromMat(mat){	//possibly doing things in a stupid way here... (should probably just store inverse of this matrix)
+	/*
+	var pos=[0,0,0];
+	for (var cc=0;cc<3;cc++){
+		pos[0]+=mat[cc]*mat[12+cc];
+		pos[1]+=mat[cc+4]*mat[12+cc];
+		pos[2]+=mat[cc+8]*mat[12+cc];
+	}
+	return pos;
+	*/
+	var invMat = mat4.create();
+	mat4.set(mat,invMat);
+	mat4.inverse(invMat);
+	return [-invMat[12],-invMat[13],-invMat[14]];
 }
 
 function getPointingDirectionFromScreenCoordinate(coords){
@@ -840,3 +902,79 @@ function crossProductHomgenous(dir1, dir2){
 	output.w = dir1.w * dir2.w;
 	return output;
 }
+
+
+
+// bullets
+//TODO encapsulate better ( make a bullets object with functions on it )
+
+var bullets=[];
+var bulletidx=0;
+var bulletspd = 0.01;
+//from tutorial: https://www.youtube.com/watch?v=YCI8uqePkrc
+function Bullet(mat, world){
+	this.world=world;
+	this.mat = mat4.create();
+	mat4.set(mat, this.mat); //COPY the rotation matrix ( could alternatively ensure that player mat isn't modified later, only reassigned. )
+	this.vel = [bulletspd*mat[2],bulletspd*mat[6],bulletspd*mat[10]];	//forward direction. 
+	this.timer = 1000;
+	this.id = bulletidx;
+	bullets[bulletidx++]=this;
+	console.log("fired a bullet");
+}
+Bullet.prototype.iterate = function(){
+	mat4.translate(this.mat, this.vel);
+	
+	if (this.timer !=0){
+		if(--this.timer ==0){
+			this.destroy();
+		}
+	}
+	
+	//mainly copy/paste from function movePlayerOutsideSphere() . TODO generalise
+	var posn = getTranslationFromMat(this.mat);
+	var posMagSq=0;
+	for (var cc=0;cc<3;cc++){
+		posMagSq+=posn[cc]*posn[cc];
+	}
+	if (posMagSq<1){
+		if (portalActive){
+			
+			//velocity should be rotated too, or expressed in object's frame rather than world frame)
+			//basically vel along position vector should remain. other component should be multiplied by -1
+			//component along reflection = r(v.r)
+			//therefore v' = r(v.r) - (v-r(v.r)) = 2r(v.r) - v
+			var vdotr = 0;
+			var vel = this.vel;
+			for (var cc=0;cc<3;cc++){
+				vdotr+= vel[cc]*posn[cc];
+			}
+			vdotr/=posMagSq;
+			for (var cc=0;cc<3;cc++){
+				vel[cc] = -vel[cc] + 2*vdotr*posn[cc];
+			}
+			
+			for (var cc=0;cc<3;cc++){
+				posn[cc]=-posn[cc]/posMagSq;
+			}
+			mat4.rotate(this.mat, Math.PI, posn);
+			
+			
+			this.world = (this.world == worldOne) ? worldTwo:worldOne;	//TODO less clunky! 
+		}else{
+			this.destroy();
+		}	
+		setMatTranslation(this.mat,posn);
+	}	
+};
+Bullet.prototype.destroy = function(){
+	console.log("destroyed a bullet");
+	delete bullets[this.id];
+};
+function setMatTranslation(mat, posn){
+	//mostly copy/paste from function setPlayerTranslation(posArray) TODO generalise
+	mat[12]=0;	//zero translation components
+	mat[13]=0;
+	mat[14]=0;
+	mat4.translate(mat, posn);
+};
