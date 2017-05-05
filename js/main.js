@@ -143,23 +143,25 @@ function drawScene(frameTime){
 	
 	worldInBall = portalActive ? otherWorld : currentWorld;
 	
-	for (var ii=0;ii<6;ii++){
-	//for (var ii=0;ii<1;ii++){
-		mat4.perspective( 90.0, 1.0, 0.00025, 100, pMatrix);	
-		var framebuffer = cubemapFramebuffer[ii];
-		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-		gl.viewport(0, 0, framebuffer.width, framebuffer.height);
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-		
-		//mat4.set(playerMatrix, playerCamera);
-		mat4.identity(playerCamera);
-				
-		mat4.rotateY(playerCamera, rotsY[ii]);
-		mat4.rotateX(playerCamera, rotsX[ii]);
-		mat4.translate(playerCamera, offsetPointSigned);
+	if (guiParams.renderCubemap){
+		for (var ii=0;ii<6;ii++){
+		//for (var ii=0;ii<1;ii++){
+			mat4.perspective( 90.0, 1.0, 0.00025, 100, pMatrix);	
+			var framebuffer = cubemapFramebuffer[ii];
+			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+			gl.viewport(0, 0, framebuffer.width, framebuffer.height);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			
+			//mat4.set(playerMatrix, playerCamera);
+			mat4.identity(playerCamera);
+					
+			mat4.rotateY(playerCamera, rotsY[ii]);
+			mat4.rotateX(playerCamera, rotsX[ii]);
+			mat4.translate(playerCamera, offsetPointSigned);
 
-		//mat4.multiply(playerCamera, playerMatrix, playerCamera);
-		drawWorldScene(frameTime, false, worldInBall);
+			//mat4.multiply(playerCamera, playerMatrix, playerCamera);
+			drawWorldScene(frameTime, false, worldInBall);
+		}
 	}
 	
 	
@@ -530,7 +532,7 @@ function initTexture() {
 	texture.image.src = "img/0033.jpg";
 	
 	worldOne.skybox = loadCubeMap("img/skyboxes/gg");
-	worldTwo.skybox = loadCubeMap("img/skyboxes/gg");
+	worldTwo.skybox = worldOne.skybox;
 }
 
 
@@ -542,6 +544,7 @@ var guiParams={
 	drawSkybox: true,
 	drawItems: true,
 	drawPlayer: false,
+	renderCubemap: true,
 	smoothMovement: true
 };
 
@@ -568,6 +571,7 @@ function init(){
 	gui.add(guiParams, 'drawSkybox');
 	gui.add(guiParams, 'drawItems');
 	gui.add(guiParams, 'drawPlayer');
+	gui.add(guiParams, 'renderCubemap');
 	gui.add(guiParams, 'smoothMovement');
 
 	//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
