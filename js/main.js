@@ -263,11 +263,13 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		
 		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 1.0, 1.0]);	//WHITE
 	
-		var itemsToDraw = world.items;
-		for (var ii in itemsToDraw){
-			var thisItem = itemsToDraw[ii];
-			mat4.translate(mvMatrix, thisItem.trans);
-			drawObjectFromBuffers(thisItem.buffers, activeProg);
+		if (guiParams.drawItems){
+			var itemsToDraw = world.items;
+			for (var ii in itemsToDraw){
+				var thisItem = itemsToDraw[ii];
+				mat4.translate(mvMatrix, thisItem.trans);
+				drawObjectFromBuffers(thisItem.buffers, activeProg);
+			}
 		}
 		
 		if (guiParams.drawPlayer){
@@ -477,6 +479,7 @@ function loadCubeMap(base)
 				 ["dn.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
 				 ["rt.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
 				 ["lf.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
+	//var image_counter=0;
 	for (var i = 0; i < faces.length; i++)
 	{
 		var face = faces[i][1];
@@ -537,6 +540,7 @@ var guiParams={
 	projectionPoint: 'offset',
 	portal: true,
 	drawSkybox: true,
+	drawItems: true,
 	drawPlayer: false,
 	smoothMovement: true
 };
@@ -562,6 +566,7 @@ function init(){
 	gui.add(guiParams, 'projectionPoint', ['centre', 'offset']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'portal');
 	gui.add(guiParams, 'drawSkybox');
+	gui.add(guiParams, 'drawItems');
 	gui.add(guiParams, 'drawPlayer');
 	gui.add(guiParams, 'smoothMovement');
 
