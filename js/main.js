@@ -9,10 +9,9 @@ var playerObjScaleVec=[playerObjScale,playerObjScale,playerObjScale];
 
 function initShaders(){
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
-		attributes:["aVertexPosition", "aVertexNormal"],
+		attributes:["aVertexPosition"],
 		uniforms:["uPMatrix","uMVMatrix","uColor"]
 	});
-	console.log("loaded 1st shader");
 	shaderProgramPosColor = loadShader( "shader-poscolor-vs", "shader-poscolor-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uColor"]
@@ -22,7 +21,7 @@ function initShaders(){
 		uniforms:["uPMatrix","uMVMatrix","uColor","uSpherePos"]
 	});
 	reflProgs.projection = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
-		attributes:["aVertexPosition", "aVertexNormal"],
+		attributes:["aVertexPosition"],
 		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
 	});
 	reflProgs.distant = loadShader( "shader-reflect-vs", "shader-cubemap-fs",{
@@ -30,12 +29,12 @@ function initShaders(){
 		uniforms:["uPMatrix","uMVMatrix","uEyePos"]
 	});
 	reflProgs.vertprojection = loadShader( "shader-reflect-vertproj-vs", "shader-cubemapportal-vertproj-fs",{
-		attributes:["aVertexPosition", "aVertexNormal"],
+		attributes:["aVertexPosition"],
 		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
 	});
 	
 	portalProgs.projection = loadShader( "shader-cubemap-vs", "shader-cubemapportal-fs",{
-		attributes:["aVertexPosition", "aVertexNormal"],
+		attributes:["aVertexPosition"],
 		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
 	});
 	portalProgs.distant = loadShader( "shader-reflect-vs", "shader-cubemapportal-fs",{
@@ -43,7 +42,7 @@ function initShaders(){
 		uniforms:["uPMatrix","uMVMatrix","uEyePos"]
 	});
 	portalProgs.vertprojection = loadShader( "shader-cubemap-vertproj-vs", "shader-cubemapportal-vertproj-fs",{
-		attributes:["aVertexPosition", "aVertexNormal"],
+		attributes:["aVertexPosition"],
 		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
 	});
 	
@@ -202,14 +201,12 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			
 			gl.disable(gl.CULL_FACE);
 			gl.disable(gl.DEPTH_TEST);
-			gl.disable(gl.DEPTH_WRITE);
 
 			drawObjectFromBuffers(sphereBuffers, activeProg);	//TODO use cube object
 		}
 		
 		gl.enable(gl.CULL_FACE);
 		gl.enable(gl.DEPTH_TEST);
-		gl.enable(gl.DEPTH_WRITE);
 		
 		mat4.set(playerCamera, mvMatrix)
 		
@@ -488,7 +485,6 @@ function loadCubeMap(base)
 		var image = new Image();
 		image.onload = function (texture, face, image) {
 			return function () {
-				console.log("texture : " + texture);
 				gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 				gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 				gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
