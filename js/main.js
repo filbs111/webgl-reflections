@@ -272,46 +272,8 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		}
 		
 		if (guiParams.drawPlayer){
-			//draw the player object.
-			
 			drawObjectFromBuffersForScaleAndWorld(cubeFrameBuffers, activeProg, {mat:playerMatrix, world:currentWorld}, playerObjScaleVec, world);
-			
-			/*
-			//draw player object at "opposite" spot in the world (so will see through portal)	
-			var movedPlayerMatrix = mat4.create();
-			mat4.set(playerMatrix, movedPlayerMatrix);
-			
-			movedPlayerMatrix[12]=0;	//zero translation components
-			movedPlayerMatrix[13]=0;
-			movedPlayerMatrix[14]=0;
-			
-			var posMagSq=0;
-			for (var cc=0;cc<3;cc++){
-				posMagSq+=playerPosition[cc]*playerPosition[cc];
-			}
-			
-			var invertedPlayerPos = [];
-			for (var cc=0;cc<3;cc++){
-				invertedPlayerPos[cc]=-playerPosition[cc]/posMagSq;
-				//invertedPlayerPos[cc]=playerPosition[cc];
-			}
-			//invertedPlayerPos[2]+=1;
-			
-			mat4.rotate(movedPlayerMatrix, Math.PI, playerPosition);
-			mat4.translate(movedPlayerMatrix, invertedPlayerPos);
-
-			mat4.set(movedPlayerMatrix, invPlayerMat);
-			mat4.inverse(invPlayerMat);
-			
-			mat4.set(playerCamera, mvMatrix);
-			mat4.multiply(mvMatrix, invPlayerMat);
-			mat4.scale(mvMatrix,playerObjScaleVec);
-			
-			drawObjectFromBuffers(cubeFrameBuffers, activeProg);
-			*/
 		}
-		
-		
 		
 		for (var bb in bullets){
 			drawObjectFromBuffersForScaleAndWorld(cubeFrameBuffers, activeProg, bullets[bb], [0.01,0.01,0.04], world);
@@ -513,6 +475,7 @@ function setupScene() {
 var texture;
 
 function initTexture() {
+	/*
 	texture = gl.createTexture();
 	texture.image = new Image();
 	texture.image.onload = function() {
@@ -526,7 +489,7 @@ function initTexture() {
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 	texture.image.src = "img/0033.jpg";
-	
+	*/
 	worldOne.skybox = loadCubeMap("img/skyboxes/gg");
 	worldTwo.skybox = worldOne.skybox;
 }
