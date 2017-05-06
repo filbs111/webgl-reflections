@@ -147,10 +147,15 @@ function drawScene(frameTime){
 	
 	worldInBall = portalActive ? otherWorld : currentWorld;
 	
-	if (guiParams.renderCubemap){
+	mat4.perspective(90, gl.viewportWidth/ gl.viewportHeight, 0.00025, 100, finalPMatrix);
+	
+	var frustumCullCmap = guiParams.culling? generateCullFunc(cmapPMatrix): noCull;	//TODO don't redo this if pMatrix unchanged
+	var frustumCullFinal = guiParams.culling? generateCullFunc(finalPMatrix): noCull;		
+	
+	if (guiParams.renderCubemap && frustumCullFinal(playerMatrix,1)){
+		pMatrix = cmapPMatrix;
 		for (var ii=0;ii<6;ii++){
 		//for (var ii=0;ii<1;ii++){
-			mat4.perspective( 90.0, 1.0, 0.00025, 100, pMatrix);	
 			var framebuffer = cubemapFramebuffer[ii];
 			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 			gl.viewport(0, 0, framebuffer.width, framebuffer.height);
@@ -164,12 +169,11 @@ function drawScene(frameTime){
 			mat4.translate(playerCamera, offsetPointSigned);
 
 			//mat4.multiply(playerCamera, playerMatrix, playerCamera);
-			drawWorldScene(frameTime, false, worldInBall);
+			drawWorldScene(frameTime, false, worldInBall, frustumCullCmap);
 		}
 	}
 	
-	
-	mat4.perspective(90, gl.viewportWidth/ gl.viewportHeight, 0.00025, 100, pMatrix);
+	pMatrix = finalPMatrix;
 
 	//setup for drawing to screen
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -178,14 +182,13 @@ function drawScene(frameTime){
 	
 	mat4.set(playerMatrix, playerCamera);	//necessary to have playerCam and playerMatrix???
 	
-	drawWorldScene(frameTime, true, currentWorld);
+	drawWorldScene(frameTime, true, currentWorld, frustumCullFinal);
 }
 
 function noCull(){
 	return true;
 }
-function drawWorldScene(frameTime, drawReflector, world) {
-		frustumCull = guiParams.culling? generateCullFunc(pMatrix): noCull;	//TODO don't redo this if pMatrix unchanged
+function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 		
 		setGlClearColor(world.bgColor);
 		
@@ -249,7 +252,9 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			
 			switch (guiParams.shape){
 				case "sphere":
-					drawObjectFromBuffers(ballBuffers, activeProg);
+					if (frustumCull(mvMatrix,1)){	//doesn't affect performance much so maybe should remove culling here (but keep for draw cubemap)
+						drawObjectFromBuffers(ballBuffers, activeProg);
+					}
 				break;
 				case "teapot":
 					drawObjectFromBuffers(teapotBuffers, activeProg);
@@ -371,7 +376,6 @@ function drawObjectFromBuffersForScaleAndWorld(bufferObj, activeProg, obj, scale
 }
 
 //copied from 3sphere explorer project
-var frustumCull;
 function generateCullFunc(pMat){
 	var const1 = pMat[5];
 	var const2 = pMat[0];
@@ -390,8 +394,12 @@ function generateCullFunc(pMat){
 }
 
 
+var cmapPMatrix = mat4.create();
+mat4.perspective( 90.0, 1.0, 0.00025, 100, cmapPMatrix);
+var finalPMatrix = mat4.create();
+
 var mvMatrix = mat4.create();
-var pMatrix = mat4.create();
+var pMatrix = finalPMatrix;
 var playerMatrix = mat4.create();
 var playerCamera = mat4.create();
 
