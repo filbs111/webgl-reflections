@@ -533,6 +533,7 @@ function initTexture() {
 
 
 var guiParams={
+	pixSizeMultiplier:1.0,
 	shape: 'sphere',
 	mappingType: 'vertex projection',
 	projectionPoint: 'offset',
@@ -562,6 +563,7 @@ function init(){
 	document.body.appendChild( stats.dom );
 
 	var gui = new dat.GUI();
+	gui.add(guiParams, 'pixSizeMultiplier', 0.25, 4.0, 0.25);
 	gui.add(guiParams, 'shape', ['sphere', 'teapot', 'octoframe']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'mappingType', ['projection', 'vertex projection', 'distant reflection']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'projectionPoint', ['centre', 'offset']).onChange(function(v){console.log("changed " + v);});
@@ -885,8 +887,8 @@ function getPointingDirectionFromScreenCoordinate(coords){
 	var maxyvert = 1.0;	
 	var maxxvert = screenAspect;
 	
-	var xpos = maxxvert*(coords.x*2.0/gl.viewportWidth   -1.0 );
-	var ypos = maxyvert*(coords.y*2.0/gl.viewportHeight   -1.0 );
+	var xpos = maxxvert*(coords.x*2.0/canvas.mystylewidth   -1.0 );
+	var ypos = maxyvert*(coords.y*2.0/canvas.mystyleheight   -1.0 );
 	var radsq = xpos*xpos + ypos*ypos;
 	var zpos = 1.0;	//FOV 90 deg
 	
