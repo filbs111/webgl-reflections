@@ -563,7 +563,7 @@ function init(){
 	document.body.appendChild( stats.dom );
 
 	var gui = new dat.GUI();
-	gui.add(guiParams, 'pixSizeMultiplier', 0.25, 4.0, 0.25);
+	gui.add(guiParams, 'pixSizeMultiplier', 0.5, 2.0, 0.5);
 	gui.add(guiParams, 'shape', ['sphere', 'teapot', 'octoframe']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'mappingType', ['projection', 'vertex projection', 'distant reflection']).onChange(function(v){console.log("changed " + v);});
 	gui.add(guiParams, 'projectionPoint', ['centre', 'offset']).onChange(function(v){console.log("changed " + v);});
