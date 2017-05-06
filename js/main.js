@@ -271,14 +271,22 @@ function drawWorldScene(frameTime, drawReflector, world) {
 		
 		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 1.0, 1.0]);	//WHITE
 	
+		
 		if (guiParams.drawItems){
 			var itemsToDraw = world.items;
+			var scale = parseFloat(guiParams.itemScale);
+			var invScale=1.0/scale;
+			var itemSf= [scale,scale,scale];
+			var itemInvSf=[invScale,invScale,invScale];
+
 			for (var ii in itemsToDraw){
 				var thisItem = itemsToDraw[ii];
 				mat4.translate(mvMatrix, thisItem.trans);
-				if (frustumCull(mvMatrix,thisItem.buffers.cullRad)){
+				mat4.scale(mvMatrix, itemSf);
+				if (frustumCull(mvMatrix,scale*thisItem.buffers.cullRad)){
 					drawObjectFromBuffers(thisItem.buffers, activeProg);
 				}
+				mat4.scale(mvMatrix, itemInvSf);
 			}
 		}
 		
@@ -531,6 +539,7 @@ var guiParams={
 	portal: true,
 	drawSkybox: true,
 	drawItems: true,
+	itemScale: 1,
 	drawPlayer: false,
 	renderCubemap: true,
 	smoothMovement: true,
@@ -559,6 +568,7 @@ function init(){
 	gui.add(guiParams, 'portal');
 	gui.add(guiParams, 'drawSkybox');
 	gui.add(guiParams, 'drawItems');
+	gui.add(guiParams, 'itemScale', 0.1,1.5,0.1);
 	gui.add(guiParams, 'drawPlayer');
 	gui.add(guiParams, 'renderCubemap');
 	gui.add(guiParams, 'smoothMovement');
