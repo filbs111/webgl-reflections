@@ -72,6 +72,11 @@ function initBuffers(){
 	loadBufferData(octoFrameBuffers, octoFrameBlenderObject);
 	loadBufferData(teapotBuffers, teapotObject);
 
+	sphereBuffers.cullRad = 1;
+	cubeFrameBuffers.cullRad = Math.sqrt(3);	//radius of bounding sphere
+	octoFrameBuffers.cullRad = 1;
+	teapotBuffers.cullRad = 2;	//guess
+	
 	function bufferArrayData(buffer, arr, size){
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
@@ -165,7 +170,7 @@ function drawScene(frameTime){
 	
 	
 	mat4.perspective(90, gl.viewportWidth/ gl.viewportHeight, 0.00025, 100, pMatrix);
-	
+
 	//setup for drawing to screen
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -176,9 +181,11 @@ function drawScene(frameTime){
 	drawWorldScene(frameTime, true, currentWorld);
 }
 
-
+function noCull(){
+	return true;
+}
 function drawWorldScene(frameTime, drawReflector, world) {
-		
+		frustumCull = guiParams.culling? generateCullFunc(pMatrix): noCull;	//TODO don't redo this if pMatrix unchanged
 		
 		setGlClearColor(world.bgColor);
 		
@@ -194,7 +201,9 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			gl.useProgram(activeProg);
 			gl.uniform4fv(activeProg.uniforms.uColor, world.bgColor);
 			
+			//gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_CUBE_MAP, world.skybox);
+			//gl.uniform1i(activeProg.uniforms.uSampler, 0);
 
 			mat4.set(playerCamera, mvMatrix);	//TODO position cubemap at player position
 			mat4.scale(mvMatrix, [50,50,50]);
@@ -267,7 +276,9 @@ function drawWorldScene(frameTime, drawReflector, world) {
 			for (var ii in itemsToDraw){
 				var thisItem = itemsToDraw[ii];
 				mat4.translate(mvMatrix, thisItem.trans);
-				drawObjectFromBuffers(thisItem.buffers, activeProg);
+				if (frustumCull(mvMatrix,thisItem.buffers.cullRad)){
+					drawObjectFromBuffers(thisItem.buffers, activeProg);
+				}
 			}
 		}
 		
@@ -351,6 +362,24 @@ function drawObjectFromBuffersForScaleAndWorld(bufferObj, activeProg, obj, scale
 	drawObjectFromBuffers(bufferObj, activeProg);
 }
 
+//copied from 3sphere explorer project
+var frustumCull;
+function generateCullFunc(pMat){
+	var const1 = pMat[5];
+	var const2 = pMat[0];
+	var const3 = Math.sqrt(1+pMat[5]*pMat[5]);
+	var const4 = Math.sqrt(1+pMat[0]*pMat[0]); 
+	return function(mat, rad){	//return whether an sphere of radius rad, at a position determined by mat (ie with position [mat[12],mat[13],mat[14],mat[15]]) overlaps the view frustum.
+		var const5=const3*rad;	//TODO only do this once when drawing a sequence of same objects.
+		var const6=const4*rad;
+		if (mat[14]>rad){return false;}
+		if (mat[14]-const1*mat[13]>const5){return false;}	//vertical culling
+		if (mat[14]+const1*mat[13]>const5){return false;}	
+		if (mat[14]-const2*mat[12]>const6){return false;}	//horiz culling
+		if (mat[14]+const2*mat[12]>const6){return false;}
+		return true;
+	}
+}
 
 
 var mvMatrix = mat4.create();
@@ -504,7 +533,8 @@ var guiParams={
 	drawItems: true,
 	drawPlayer: false,
 	renderCubemap: true,
-	smoothMovement: true
+	smoothMovement: true,
+	culling: true
 };
 
 var mouseInfo = {
@@ -532,6 +562,7 @@ function init(){
 	gui.add(guiParams, 'drawPlayer');
 	gui.add(guiParams, 'renderCubemap');
 	gui.add(guiParams, 'smoothMovement');
+	gui.add(guiParams, 'culling');
 
 	//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 	
@@ -673,7 +704,6 @@ var iterateMechanics = (function iterateMechanics(){
 	}
 })();
 
-
 var playerPosition = [0,0,0];
 var worldOne = {
 	items: [{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
@@ -682,7 +712,6 @@ var worldOne = {
 			{trans:[0, -4, 0], buffers:sphereBuffers}, //bottom
 			{trans:[0, 2, 2], buffers:octoFrameBuffers}, //front
 			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
-			//{trans:[0, 1, 0], buffers:teapotBuffers}, //back
 			],
 	bgColor: [1.1, 1.1, 1.1, 1.0]
 };
