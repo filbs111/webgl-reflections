@@ -59,18 +59,22 @@ var cubeFrameBuffers={};
 var octoFrameBuffers={};
 var teapotBuffers={};
 var sshipBuffers={};
+var portalFrameBuffers={};
+
 function initBuffers(){
 	
 	var cubeFrameBlenderObject = loadBlenderExport(cubeFrameData.meshes[0]);
 	var octoFrameBlenderObject = loadBlenderExport(octoFrameData.meshes[0]);
 	var teapotObject = loadBlenderExport(teapotData);	//isn't actually a blender export - just a obj json
-
+	var portalFrameObject = loadBlenderExport(portalFrameData);
+	
 	loadBufferData(ballBuffers, makeSphereData(99,200,1));	//todo use subdivided normalized box instead of sphere 
 	loadBufferData(sphereBuffers, makeSphereData(19,40,1));
 	loadBufferData(cubeBuffers, levelCubeData);
 	loadBufferData(cubeFrameBuffers, cubeFrameBlenderObject);
 	loadBufferData(octoFrameBuffers, octoFrameBlenderObject);
 	loadBufferData(teapotBuffers, teapotObject);
+	loadBufferData(portalFrameBuffers, portalFrameObject);
 
 	sphereBuffers.cullRad = 1;
 	cubeFrameBuffers.cullRad = Math.sqrt(3);	//radius of bounding sphere
@@ -586,6 +590,10 @@ function init(){
 
 	//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 	
+	keyThing.setKeydownCallback(70,function(){			//70=F
+		goFullscreen(canvas);
+	});
+	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
@@ -726,7 +734,10 @@ var iterateMechanics = (function iterateMechanics(){
 
 var playerPosition = [0,0,0];
 var worldOne = {
-	items: [{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
+	items: [
+			{trans:[0, 0, 0], buffers:portalFrameBuffers},
+			
+			{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
 			{trans:[-4, 0, 0], buffers:octoFrameBuffers}, //left
 			{trans:[2, 2, 0], buffers:octoFrameBuffers}, //top
 			{trans:[0, -4, 0], buffers:sphereBuffers}, //bottom
@@ -736,12 +747,16 @@ var worldOne = {
 	bgColor: [1.1, 1.1, 1.1, 1.0]
 };
 var worldTwo = {
-	items: [{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
+	items: [
+			{trans:[0, 0, 0], buffers:portalFrameBuffers},
+	/*
+			{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
 			{trans:[-4, 0, 0], buffers:cubeFrameBuffers}, //left
 			{trans:[2, 2, 0], buffers:cubeFrameBuffers}, //top
 			{trans:[0, -4, 0], buffers:cubeFrameBuffers}, //bottom
 			{trans:[0, 2, 2], buffers:cubeFrameBuffers}, //front
 			{trans:[0, 0, -4], buffers:cubeFrameBuffers}, //back
+			*/
 			],
 	bgColor: [0.6, 0.0, 0.0, 1.0]
 };
