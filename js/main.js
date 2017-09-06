@@ -1,5 +1,7 @@
 var shaderProgramColored;
 var shaderProgramPosColor;
+var shaderProgramPosColorWDiscard;
+var shaderProgramTexmap;
 var shaderProgramSimpleCubemap;
 var reflProgs={};
 var portalProgs={};
@@ -16,9 +18,19 @@ function initShaders(){
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uColor"]
 	});
+	gl.useProgram(shaderProgramPosColor);
+	gl.uniform4fv(shaderProgramPosColor.uniforms.uColor, [1.0, 1.0, 1.0, 1.0]);	//WHITE
+
 	shaderProgramPosColorWDiscard = loadShader( "shader-poscolorwdiscard-vs", "shader-poscolorwdiscard-fs",{
 		attributes:["aVertexPosition", "aVertexNormal"],
 		uniforms:["uPMatrix","uMVMatrix","uColor","uSpherePos"]
+	});
+	gl.useProgram(shaderProgramPosColorWDiscard);
+	gl.uniform4fv(shaderProgramPosColorWDiscard.uniforms.uColor, [1.0, 1.0, 1.0, 1.0]);	//WHITE
+	
+	shaderProgramTexmap = loadShader( "shader-texmap-vs", "shader-texmap-fs",{
+		attributes:["aVertexPosition", "aTextureCoord"],
+		uniforms:["uPMatrix","uMVMatrix","uSampler"]
 	});
 	reflProgs.projection = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
 		attributes:["aVertexPosition"],
@@ -59,14 +71,18 @@ var cubeFrameBuffers={};
 var octoFrameBuffers={};
 var teapotBuffers={};
 var sshipBuffers={};
-var portalFrameBuffers={};
+var portalFrameOneBuffers={};
+var portalFrameTwoBuffers={};
 
 function initBuffers(){
 	
 	var cubeFrameBlenderObject = loadBlenderExport(cubeFrameData.meshes[0]);
 	var octoFrameBlenderObject = loadBlenderExport(octoFrameData.meshes[0]);
 	var teapotObject = loadBlenderExport(teapotData);	//isn't actually a blender export - just a obj json
-	var portalFrameObject = loadBlenderExport(portalFrameData);
+	var portalFrameObject = loadBlenderExport(portalFrameData, {loaduvs:true});
+	
+	delete portalFrameObject.normals;	//shader doesn't use
+	console.log(portalFrameObject);
 	
 	loadBufferData(ballBuffers, makeSphereData(99,200,1));	//todo use subdivided normalized box instead of sphere 
 	loadBufferData(sphereBuffers, makeSphereData(19,40,1));
@@ -74,13 +90,14 @@ function initBuffers(){
 	loadBufferData(cubeFrameBuffers, cubeFrameBlenderObject);
 	loadBufferData(octoFrameBuffers, octoFrameBlenderObject);
 	loadBufferData(teapotBuffers, teapotObject);
-	loadBufferData(portalFrameBuffers, portalFrameObject);
-
+	loadBufferData(portalFrameOneBuffers, portalFrameObject);
+	loadBufferData(portalFrameTwoBuffers, portalFrameObject);	//inefficient and slow - TODO perhaps should take array as first arg to loadBufferData to load same data in 2 places. or extra func to copy data from one to the other (without copying textures). this would reduce memory use since referencing same data, and reduce loading time.
+	
 	sphereBuffers.cullRad = 1;
 	cubeFrameBuffers.cullRad = Math.sqrt(3);	//radius of bounding sphere
 	octoFrameBuffers.cullRad = 1;
 	teapotBuffers.cullRad = 2;	//guess
-	
+		
 	function bufferArrayData(buffer, arr, size){
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
@@ -96,10 +113,10 @@ function initBuffers(){
 			bufferObj.vertexTextureCoordBuffer= gl.createBuffer();
 			bufferArrayData(bufferObj.vertexTextureCoordBuffer, sourceData.uvcoords, 2);
 		}
-		
-		bufferObj.vertexNormalBuffer= gl.createBuffer();
-		bufferArrayData(bufferObj.vertexNormalBuffer, sourceData.normals, 3);
-
+		if (sourceData.normals){
+			bufferObj.vertexNormalBuffer= gl.createBuffer();
+			bufferArrayData(bufferObj.vertexNormalBuffer, sourceData.normals, 3);
+		}
 		bufferObj.vertexIndexBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferObj.vertexIndexBuffer);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sourceData.indices), gl.STATIC_DRAW);
@@ -107,13 +124,17 @@ function initBuffers(){
 		bufferObj.vertexIndexBuffer.numItems = sourceData.indices.length;
 	}
 	
-	function loadBlenderExport(meshToLoad){
-		return {
+	function loadBlenderExport(meshToLoad, options){
+		var toReturn ={
 			vertices: meshToLoad.vertices,
 			normals: meshToLoad.normals,
-			//uvcoords: meshToLoad.texturecoords?meshToLoad.texturecoords[0]:false,
 			indices: [].concat.apply([],meshToLoad.faces)	//trick from https://www.youtube.com/watch?v=sM9n73-HiNA t~ 28:30
-		}	
+		}
+		if (options && options.loaduvs){
+			console.log("loading uvs");
+			toReturn.uvcoords = meshToLoad.texturecoords[0];
+		}
+		return toReturn;
 	};
 }
 
@@ -192,6 +213,7 @@ function drawScene(frameTime){
 function noCull(){
 	return true;
 }
+
 function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 		
 		setGlClearColor(world.bgColor);
@@ -271,15 +293,16 @@ function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 		
 		//draw other objects in scene
 
-		activeProg = drawReflector ? shaderProgramPosColor: shaderProgramPosColorWDiscard;
-		gl.useProgram(activeProg);
+		var noTexProg = drawReflector ? shaderProgramPosColor: shaderProgramPosColorWDiscard;
+		gl.useProgram(noTexProg);
+		
 		if (!drawReflector){
-			gl.uniform3fv(activeProg.uniforms.uSpherePos, [playerCamera[12],playerCamera[13],playerCamera[14]]);	//basically co-ordinates of world 0,0,0 in current camera
+			gl.uniform3fv(noTexProg.uniforms.uSpherePos, [playerCamera[12],playerCamera[13],playerCamera[14]]);	//basically co-ordinates of world 0,0,0 in current camera
 		}
 		//TODO disable texture??
 		
-		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 1.0, 1.0]);	//WHITE
-	
+		activeProg=noTexProg;
+		
 		
 		if (guiParams.drawItems){
 			var itemsToDraw = world.items;
@@ -290,6 +313,14 @@ function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 
 			for (var ii in itemsToDraw){
 				var thisItem = itemsToDraw[ii];
+				
+				var texToUse = thisItem.buffers.texture ? shaderProgramTexmap : noTexProg;
+				if (activeProg!=texToUse){
+					//console.log("switching");
+					activeProg=texToUse;
+					gl.useProgram(activeProg);
+				}
+				
 				mat4.translate(mvMatrix, thisItem.trans);
 				mat4.scale(mvMatrix, itemSf);
 				if (frustumCull(mvMatrix,scale*thisItem.buffers.cullRad)){
@@ -330,7 +361,7 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
 		gl.vertexAttribPointer(shaderProg.attributes.aTextureCoord, bufferObj.vertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 	
 		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.bindTexture(gl.TEXTURE_2D, bufferObj.texture);
 		gl.uniform1i(shaderProg.uniforms.uSampler, 0);
 	}
 	gl.uniformMatrix4fv(shaderProg.uniforms.uPMatrix, false, pMatrix);
@@ -521,9 +552,7 @@ function setupScene() {
 }
 
 
-var texture;
-
-function initTexture() {
+function initSkyboxes() {
 	/*
 	texture = gl.createTexture();
 	texture.image = new Image();
@@ -539,7 +568,7 @@ function initTexture() {
 	}
 	texture.image.src = "img/0033.jpg";
 	*/
-	worldOne.skybox = loadCubeMap("img/skyboxes/gg");
+	worldOne.skybox = loadCubeMap("img/skyboxes/gg-gray");
 	worldTwo.skybox = worldOne.skybox;
 }
 
@@ -569,7 +598,7 @@ var mouseInfo = {
 var stats;
 
 function init(){
-
+	
 	stats = new Stats();
 	stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 	document.body.appendChild( stats.dom );
@@ -689,18 +718,39 @@ function init(){
 	
 	});
 	
-	
 	initGL();
+	
+	//kick off image load early. TODO move earlier (gl must be created)
+	initTexture(portalFrameOneBuffers, "data/TexMap1h.png");
+	initTexture(portalFrameTwoBuffers, "data/TexMap2h.png");
+	initSkyboxes();
+	
 	initShaders();
-	initTexture();
 	initCubemapFramebuffer();
 	initBuffers();
-  
+	
 	gl.clearColor(0.0, 0.1, 0.1, 1.0);
 	
 	setupScene();
 		
 	requestAnimationFrame(drawScene);
+	
+	
+	function initTexture(textureContainer, src) {
+		var texture = gl.createTexture();
+		texture.image = new Image();
+		texture.image.onload = function() {
+			gl.bindTexture(gl.TEXTURE_2D, texture);
+			//gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+			gl.generateMipmap(gl.TEXTURE_2D);
+			gl.bindTexture(gl.TEXTURE_2D, null);
+		}
+		texture.image.src = src;
+		textureContainer.texture = texture;
+	}
 }
 
 var iterateMechanics = (function iterateMechanics(){
@@ -735,20 +785,26 @@ var iterateMechanics = (function iterateMechanics(){
 var playerPosition = [0,0,0];
 var worldOne = {
 	items: [
-			{trans:[0, 0, 0], buffers:portalFrameBuffers},
+			{trans:[0, 0, 0], buffers:portalFrameOneBuffers},
 			
+			{trans:[-4, 0, 0], buffers:octoFrameBuffers}, //left
+			
+			/*
 			{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
 			{trans:[-4, 0, 0], buffers:octoFrameBuffers}, //left
 			{trans:[2, 2, 0], buffers:octoFrameBuffers}, //top
 			{trans:[0, -4, 0], buffers:sphereBuffers}, //bottom
 			{trans:[0, 2, 2], buffers:octoFrameBuffers}, //front
 			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
+			*/
 			],
-	bgColor: [1.1, 1.1, 1.1, 1.0]
+	//bgColor: [1.1, 1.1, 1.1, 1.0]
+	//bgColor: [0.25, 0.4, 0.4, 1.0]		//should compensate for gamma ???
+	bgColor: [0.53, 0.66, 0.66, 1.0]
 };
 var worldTwo = {
 	items: [
-			{trans:[0, 0, 0], buffers:portalFrameBuffers},
+			{trans:[0, 0, 0], buffers:portalFrameTwoBuffers},
 	/*
 			{trans:[2, 0, 0], buffers:cubeFrameBuffers}, //right
 			{trans:[-4, 0, 0], buffers:cubeFrameBuffers}, //left
@@ -758,7 +814,8 @@ var worldTwo = {
 			{trans:[0, 0, -4], buffers:cubeFrameBuffers}, //back
 			*/
 			],
-	bgColor: [0.6, 0.0, 0.0, 1.0]
+	//bgColor: [0.6, 0.0, 0.0, 1.0]
+	bgColor: [1.0, 0.0, 0.0, 1.0]
 };
 var currentWorld = worldOne;
 var otherWorld = worldTwo;

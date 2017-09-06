@@ -128,6 +128,33 @@
 
 
 
+<!-- texture mapping shader -->
+<script id="shader-texmap-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	varying vec2 vTextureCoord;
+	uniform sampler2D uSampler;
+
+	void main(void) {
+		//gl_FragColor =  vec4(0.0,1.0,1.0,1.0);
+		gl_FragColor = texture2D(uSampler, vTextureCoord);
+	}
+</script>
+<script id="shader-texmap-vs" type="x-shader/x-vertex">
+	attribute vec3 aVertexPosition;
+	attribute vec2 aTextureCoord;
+	varying vec2 vTextureCoord;
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+				
+	void main(void) {
+		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+		vTextureCoord = aTextureCoord;
+	}
+</script>
+
+
+
+
 <!-- simple reflection shader -->
 <!-- reuses shader-cubemap-fs -->
 <!-- vertex shader -->
