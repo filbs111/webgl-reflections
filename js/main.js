@@ -172,7 +172,7 @@ function drawScene(frameTime){
 	
 	worldInBall = portalActive ? otherWorld : currentWorld;
 	
-	mat4.perspective(90, gl.viewportWidth/ gl.viewportHeight, 0.00025, 100, finalPMatrix);
+	mat4.perspective(100, gl.viewportWidth/ gl.viewportHeight, 0.00025, 100, finalPMatrix);
 	
 	var frustumCullCmap = guiParams.culling? generateCullFunc(cmapPMatrix): noCull;	//TODO don't redo this if pMatrix unchanged
 	var frustumCullFinal = guiParams.culling? generateCullFunc(finalPMatrix): noCull;		
@@ -307,8 +307,13 @@ function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 		if (guiParams.drawItems){
 			var itemsToDraw = world.items;
 			var scale = parseFloat(guiParams.itemScale);
+			
+			//accidentally made portal too small...
+			scale*=1.986;
+			
 			var invScale=1.0/scale;
 			var itemSf= [scale,scale,scale];
+			
 			var itemInvSf=[invScale,invScale,invScale];
 
 			for (var ii in itemsToDraw){
@@ -579,7 +584,7 @@ var guiParams={
 	mappingType: 'vertex projection',
 	projectionPoint: 'offset',
 	portal: true,
-	drawSkybox: true,
+	drawSkybox: false,
 	drawItems: true,
 	itemScale: 1,
 	drawPlayer: false,
@@ -721,8 +726,9 @@ function init(){
 	initGL();
 	
 	//kick off image load early. TODO move earlier (gl must be created)
-	initTexture(portalFrameOneBuffers, "data/TexMap1h.png");
-	initTexture(portalFrameTwoBuffers, "data/TexMap2h.png");
+	initTexture(portalFrameOneBuffers, "data/inLight6b.png");
+	initTexture(portalFrameTwoBuffers, "data/outLight6b.png");
+	
 	initSkyboxes();
 	
 	initShaders();
@@ -800,7 +806,9 @@ var worldOne = {
 			],
 	//bgColor: [1.1, 1.1, 1.1, 1.0]
 	//bgColor: [0.25, 0.4, 0.4, 1.0]		//should compensate for gamma ???
-	bgColor: [0.53, 0.66, 0.66, 1.0]
+	//bgColor: [0.53, 0.66, 0.66, 1.0]
+	//bgColor: [0.1, 0.1, 0.1, 1.0]
+	bgColor: [0.35, 0.35, 0.35, 1.0]		// 0.1^0.455
 };
 var worldTwo = {
 	items: [
@@ -815,7 +823,8 @@ var worldTwo = {
 			*/
 			],
 	//bgColor: [0.6, 0.0, 0.0, 1.0]
-	bgColor: [1.0, 0.0, 0.0, 1.0]
+	//bgColor: [1.0, 0.0, 0.0, 1.0]
+	bgColor: [1.0, 1.0, 1.0, 1.0]
 };
 var currentWorld = worldOne;
 var otherWorld = worldTwo;
