@@ -2,6 +2,7 @@ var shaderProgramColored;
 var shaderProgramPosColor;
 var shaderProgramPosColorWDiscard;
 var shaderProgramTexmap;
+var shaderProgramTexmap2;
 var shaderProgramSimpleCubemap;
 var reflProgs={};
 var portalProgs={};
@@ -32,6 +33,11 @@ function initShaders(){
 		attributes:["aVertexPosition", "aTextureCoord"],
 		uniforms:["uPMatrix","uMVMatrix","uSampler"]
 	});
+	shaderProgramTexmap2 = loadShader( "shader-texmap-vs", "shader-texmap2-fs",{
+		attributes:["aVertexPosition", "aTextureCoord"],
+		uniforms:["uPMatrix","uMVMatrix","uSampler","uColorMat"]
+	});
+	
 	reflProgs.projection = loadShader( "shader-cubemap-vs", "shader-cubemap-fs",{
 		attributes:["aVertexPosition"],
 		uniforms:["uPMatrix","uMVMatrix","uCentrePos"]
@@ -172,7 +178,7 @@ function drawScene(frameTime){
 	
 	worldInBall = portalActive ? otherWorld : currentWorld;
 	
-	mat4.perspective(100, gl.viewportWidth/ gl.viewportHeight, 0.00025, 100, finalPMatrix);
+	mat4.perspective(105, gl.viewportWidth/ gl.viewportHeight, 0.00025, 100, finalPMatrix);
 	
 	var frustumCullCmap = guiParams.culling? generateCullFunc(cmapPMatrix): noCull;	//TODO don't redo this if pMatrix unchanged
 	var frustumCullFinal = guiParams.culling? generateCullFunc(finalPMatrix): noCull;		
@@ -216,6 +222,7 @@ function noCull(){
 
 function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 		
+		//console.log(world.bgColor);
 		setGlClearColor(world.bgColor);
 		
 		//console.log("drawing...");
@@ -319,11 +326,27 @@ function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 			for (var ii in itemsToDraw){
 				var thisItem = itemsToDraw[ii];
 				
-				var texToUse = thisItem.buffers.texture ? shaderProgramTexmap : noTexProg;
+				var texToUse = thisItem.buffers.texture ? shaderProgramTexmap2 : noTexProg;
 				if (activeProg!=texToUse){
 					//console.log("switching");
 					activeProg=texToUse;
 					gl.useProgram(activeProg);
+				}
+				if (activeProg == shaderProgramTexmap2){
+					var colorMat = mat3.create();
+
+					var worldNum = (world == worldOne) ? 0:1;
+					var otherWorldNum = 1- worldNum;
+					
+					colorMat[0]=vecBgCol[worldNum][0];
+					colorMat[1]=vecBgCol[worldNum][1];
+					colorMat[2]=vecBgCol[worldNum][2];
+					
+					colorMat[3]=vecBgCol[otherWorldNum][0];
+					colorMat[4]=vecBgCol[otherWorldNum][1];
+					colorMat[5]=vecBgCol[otherWorldNum][2];
+					
+					gl.uniformMatrix3fv(activeProg.uniforms.uColorMat, false, colorMat);
 				}
 				
 				mat4.translate(mvMatrix, thisItem.trans);
@@ -334,6 +357,9 @@ function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 				mat4.scale(mvMatrix, itemInvSf);
 			}
 		}
+		
+		activeProg=noTexProg;
+		gl.useProgram(activeProg);
 		
 		if (guiParams.drawPlayer){
 			drawObjectFromBuffersForScaleAndWorld(cubeFrameBuffers, activeProg, {mat:playerMatrix, world:currentWorld}, playerObjScaleVec, world);
@@ -533,7 +559,7 @@ function loadCubeMap(base)
 		image.onload = function (texture, face, image) {
 			return function () {
 				gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-				gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+				gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);				
 				gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 								
 				//image_counter++;
@@ -590,7 +616,9 @@ var guiParams={
 	drawPlayer: false,
 	renderCubemap: true,
 	smoothMovement: true,
-	culling: true
+	culling: true,
+	bgColor1:'#22ffff',
+	bgColor2:'#ff2222'
 };
 
 var mouseInfo = {
@@ -601,6 +629,7 @@ var mouseInfo = {
 };
 
 var stats;
+var vecBgCol=[[0,0,0,1],[0,0,0,1]];
 
 function init(){
 	
@@ -621,6 +650,24 @@ function init(){
 	gui.add(guiParams, 'renderCubemap');
 	gui.add(guiParams, 'smoothMovement');
 	gui.add(guiParams, 'culling');
+	gui.addColor(guiParams, 'bgColor1').onChange(function(color){
+		setBgCol(0,color);
+	});
+	gui.addColor(guiParams, 'bgColor2').onChange(function(color){
+		setBgCol(1,color);
+	});
+	setBgCol(0,guiParams.bgColor1);
+	setBgCol(1,guiParams.bgColor2);
+	
+	function setBgCol(num,color){
+			var r = parseInt(color.substring(1,3),16) /255;
+			var g = parseInt(color.substring(3,5),16) /255;
+			var b = parseInt(color.substring(5,7),16) /255;
+			//vecBgCol[num] = [r,g,b,1];	//want to keep array because other things refer to it.
+			vecBgCol[num][0] = r;
+			vecBgCol[num][1] = g;
+			vecBgCol[num][2] = b;			
+	}
 
 	//examples: https://github.com/dataarts/dat.gui/blob/master/example.html
 	
@@ -726,8 +773,8 @@ function init(){
 	initGL();
 	
 	//kick off image load early. TODO move earlier (gl must be created)
-	initTexture(portalFrameOneBuffers, "data/inLight6b.png");
-	initTexture(portalFrameTwoBuffers, "data/outLight6b.png");
+	initTexture(portalFrameOneBuffers, "data/combod.png");
+	portalFrameTwoBuffers.texture = portalFrameOneBuffers.texture;
 	
 	initSkyboxes();
 	
@@ -748,6 +795,8 @@ function init(){
 		texture.image.onload = function() {
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			//gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+			gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
@@ -804,11 +853,7 @@ var worldOne = {
 			{trans:[0, 0, -4], buffers:teapotBuffers}, //back
 			*/
 			],
-	//bgColor: [1.1, 1.1, 1.1, 1.0]
-	//bgColor: [0.25, 0.4, 0.4, 1.0]		//should compensate for gamma ???
-	//bgColor: [0.53, 0.66, 0.66, 1.0]
-	//bgColor: [0.1, 0.1, 0.1, 1.0]
-	bgColor: [0.35, 0.35, 0.35, 1.0]		// 0.1^0.455
+	bgColor: vecBgCol[0]
 };
 var worldTwo = {
 	items: [
@@ -822,9 +867,7 @@ var worldTwo = {
 			{trans:[0, 0, -4], buffers:cubeFrameBuffers}, //back
 			*/
 			],
-	//bgColor: [0.6, 0.0, 0.0, 1.0]
-	//bgColor: [1.0, 0.0, 0.0, 1.0]
-	bgColor: [1.0, 1.0, 1.0, 1.0]
+	bgColor: vecBgCol[1]
 };
 var currentWorld = worldOne;
 var otherWorld = worldTwo;

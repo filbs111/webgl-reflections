@@ -152,6 +152,22 @@
 	}
 </script>
 
+<!-- 2 texture mapping shader -->
+<script id="shader-texmap2-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	varying vec2 vTextureCoord;
+	uniform sampler2D uSampler;
+	uniform mat3 uColorMat;
+	
+	void main(void) {
+		vec3 sampleVal = texture2D(uSampler, vTextureCoord).xyz;
+		vec3 preGamma = uColorMat*sampleVal;
+		
+		gl_FragColor = vec4(pow(preGamma, vec3(0.455)), 1 );
+		
+	}
+</script>
+
 
 
 
