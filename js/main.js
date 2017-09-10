@@ -316,11 +316,11 @@ function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 			var scale = parseFloat(guiParams.itemScale);
 			
 			//accidentally made portal too small...
-			scale*=1.986;
+			//scale*=1.986;
 			
 			var invScale=1.0/scale;
-			var itemSf= [scale,scale,scale];
 			
+			var itemSf= [scale,scale,scale];
 			var itemInvSf=[invScale,invScale,invScale];
 
 			for (var ii in itemsToDraw){
@@ -345,6 +345,11 @@ function drawWorldScene(frameTime, drawReflector, world, frustumCull) {
 					colorMat[3]=vecBgCol[otherWorldNum][0];
 					colorMat[4]=vecBgCol[otherWorldNum][1];
 					colorMat[5]=vecBgCol[otherWorldNum][2];
+					
+					//apply gamma correction
+					for (var ii=0;ii<6;ii++){
+						colorMat[ii]=Math.pow(colorMat[ii],2.2);
+					}
 					
 					gl.uniformMatrix3fv(activeProg.uniforms.uColorMat, false, colorMat);
 				}
@@ -579,7 +584,7 @@ function loadCubeMap(base)
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	mat4.identity(playerMatrix);
-	movePlayer([0.3,-0.2,-1.5]);
+	movePlayer([0.3,-0.2,-7.5]);
 }
 
 
@@ -617,8 +622,8 @@ var guiParams={
 	renderCubemap: true,
 	smoothMovement: true,
 	culling: true,
-	bgColor1:'#22ffff',
-	bgColor2:'#ff2222'
+	bgColor1:'#005555',
+	bgColor2:'#ffffff'
 };
 
 var mouseInfo = {
@@ -773,7 +778,8 @@ function init(){
 	initGL();
 	
 	//kick off image load early. TODO move earlier (gl must be created)
-	initTexture(portalFrameOneBuffers, "data/combod.png");
+	initTexture(portalFrameOneBuffers, "data/menger/menger3-combo.png");
+		
 	portalFrameTwoBuffers.texture = portalFrameOneBuffers.texture;
 	
 	initSkyboxes();
